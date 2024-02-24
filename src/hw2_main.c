@@ -59,9 +59,9 @@ int main(int argc, char **argv) {
                 break;
                 // rname = optarg;
         }
-        if (iflag == 0 || oflag == 0){
+    }
+    if (iflag == 0 || oflag == 0){
             return MISSING_ARGUMENT;
-        }
     }
     return 0;
 }
