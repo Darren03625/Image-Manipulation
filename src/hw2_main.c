@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
     // char* pname; 
     // char* rname;
     int iflag = 0, oflag = 0;
+    int unrecognizedflag = 0;
     // int cflag = 0, pflag = 0, rflag = 0;
 
     while ((opt = getopt(argc, argv, "i:o:c:p:r:")) != -1){
@@ -58,10 +59,16 @@ int main(int argc, char **argv) {
                 }
                 break;
                 // rname = optarg;
+            case '?':
+                unrecognizedflag = 1;
+                break;
         }
     }
     if (iflag == 0 || oflag == 0){
             return MISSING_ARGUMENT;
+    }
+    if (unrecognizedflag = 1){
+        return UNRECOGNIZED_ARGUMENT;
     }
     return 0;
 }
