@@ -18,42 +18,41 @@ int main(int argc, char **argv) {
     // char* cname;
     // char* pname; 
     // char* rname;
-    int iflag = 0, oflag = 0;
+    int iflag = 0, oflag = 0, cflag = 0, pflag = 0, rflag = 0;
     int unrecognizedflag = 0;
-    // int cflag = 0, pflag = 0, rflag = 0;
 
     while ((opt = getopt(argc, argv, "i:o:c:p:r:")) != -1){
         switch (opt){
             case 'i':
-                iflag = 1;
+                iflag++;
                 if (optarg == NULL){
                     return MISSING_ARGUMENT;
                 }
                 // iname = optarg;
                 break;
             case 'o':
-                oflag = 1;
+                oflag++;
                 if (optarg == NULL){
                     return MISSING_ARGUMENT;
                 }
                 // oname = optarg;
                 break;
             case 'c':
-                // cflag = 1;
+                cflag++;
                 if (optarg == NULL){
                     return MISSING_ARGUMENT;
                 }
                 // cname = optarg;
                 break;
             case 'p':
-                // pflag = 1;
+                pflag++;
                 if (optarg == NULL){
                     return MISSING_ARGUMENT;
-                // }
+                }
                 // pname = optarg;
                 break;
             case 'r':
-                // rflag = 1;
+                rflag++;
                 if (optarg == NULL){
                     return MISSING_ARGUMENT;
                 }
@@ -67,9 +66,11 @@ int main(int argc, char **argv) {
     if (iflag == 0 || oflag == 0){
             return MISSING_ARGUMENT;
     }
-    if (unrecognizedflag = 1){
+    if (unrecognizedflag == 1){
         return UNRECOGNIZED_ARGUMENT;
     }
+    if (iflag > 1 || oflag > 1 || cflag > 1 || pflag > 1 || rflag > 1){
+        return DUPLICATE_ARGUMENT;
+    }
     return 0;
-}
 }
