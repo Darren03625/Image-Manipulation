@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     extern char *optarg;
     extern int optind;
     int opt;
-    char* iname, *oname, *cname, *pname, *rname;
+    char* iname = NULL, *oname = NULL, *cname = NULL, *pname = NULL, *rname = NULL;
     int iflag = 0, oflag = 0, cflag = 0, pflag = 0, rflag = 0;
     int unrecognizedflag = 0;
 
@@ -96,8 +96,8 @@ int main(int argc, char **argv) {
     if (iflag > 1 || oflag > 1 || cflag > 1 || pflag > 1 || rflag > 1){
         return DUPLICATE_ARGUMENT;
     }
-    FILE *fp = fopen(iname, "r");
-    if (fp == NULL){
+    FILE *fp;
+    if ((fp = fopen(iname, "r")) == NULL){
         return INPUT_FILE_MISSING;
     }
     else{
@@ -112,8 +112,49 @@ int main(int argc, char **argv) {
         fclose(fp);
     }
 
-    // if (pname != NULL && cname == NULL){
-    //     return C_ARGUMENT_MISSING;
-    // }
+    if (pname != NULL && cname == NULL){
+        return C_ARGUMENT_MISSING;
+    }
+
+    int counter = 1;
+    if (cname != NULL){
+        for (int i = 0; cname[i] != '\0'; i++){
+            if (cname[i] == ',' && strtoul(&cname[i+1], NULL, 10) > 0){
+                counter++;
+            }
+        }
+    }
+
+    if(counter != 4){
+        return C_ARGUMENT_INVALID;
+    }
+
+    counter = 1;
+    if (pname != NULL){
+        for (int i = 0; pname[i] != '\0'; i++){
+            if (pname[i] == ',' && strtoul(&pname[i+1], NULL, 10) > 0){
+                counter++;
+            }
+        }
+    }
+
+    if (counter != 2){
+        return P_ARGUMENT_INVALID;
+    }
+
+    counter = 1;
+    if (pname != NULL){
+        for (int i = 0; pname[i] != '\0'; i++){
+            if (pname[i] == ',' && pname[i] != '\0'){
+                counter++;
+            }
+        }
+    }
+
+    printf("\n%d", counter);
+    if (counter != 5){
+        return R_ARGUMENT_INVALID;
+    }
+
     return 0;
 }
