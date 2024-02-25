@@ -1,14 +1,14 @@
-#include "hw2.h"
+// #include "hw2.h"
 
-// #define MISSING_ARGUMENT 1
-// #define UNRECOGNIZED_ARGUMENT 2
-// #define DUPLICATE_ARGUMENT 3
-// #define INPUT_FILE_MISSING 4
-// #define OUTPUT_FILE_UNWRITABLE 5
-// #define C_ARGUMENT_MISSING 6
-// #define C_ARGUMENT_INVALID 7
-// #define P_ARGUMENT_INVALID 8
-// #define R_ARGUMENT_INVALID 9
+#define MISSING_ARGUMENT 1
+#define UNRECOGNIZED_ARGUMENT 2
+#define DUPLICATE_ARGUMENT 3
+#define INPUT_FILE_MISSING 4
+#define OUTPUT_FILE_UNWRITABLE 5
+#define C_ARGUMENT_MISSING 6
+#define C_ARGUMENT_INVALID 7
+#define P_ARGUMENT_INVALID 8
+#define R_ARGUMENT_INVALID 9
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -97,6 +97,7 @@ int main(int argc, char **argv) {
         return DUPLICATE_ARGUMENT;
     }
     FILE *fp;
+    printf("\n%s", iname);
     if ((fp = fopen(iname, "r")) == NULL){
         return INPUT_FILE_MISSING;
     }
@@ -117,6 +118,7 @@ int main(int argc, char **argv) {
     }
 
     int counter = 1;
+    printf("\n%s", cname);
     if (cname != NULL){
         for (int i = 0; cname[i] != '\0'; i++){
             if (cname[i] == ',' && strtoul(&cname[i+1], NULL, 10) > 0){
@@ -154,7 +156,6 @@ int main(int argc, char **argv) {
     if (counter != 5){
         return R_ARGUMENT_INVALID;
     }
-    printf({"%d", counter})
 
     return 0;
 }
