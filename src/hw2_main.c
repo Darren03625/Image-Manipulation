@@ -1,4 +1,14 @@
-#include "hw2.h"
+// #include "hw2.h"
+
+#define MISSING_ARGUMENT 1
+#define UNRECOGNIZED_ARGUMENT 2
+#define DUPLICATE_ARGUMENT 3
+#define INPUT_FILE_MISSING 4
+#define OUTPUT_FILE_UNWRITABLE 5
+#define C_ARGUMENT_MISSING 6
+#define C_ARGUMENT_INVALID 7
+#define P_ARGUMENT_INVALID 8
+#define R_ARGUMENT_INVALID 9
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,72 +23,72 @@ int main(int argc, char **argv) {
     extern char *optarg;
     extern int optind;
     int opt;
-    // char* iname;
-    // char* oname; 
-    // char* cname;
-    // char* pname; 
-    // char* rname;
+    char* iname, *oname, *cname, *pname, *rname;
     int iflag = 0, oflag = 0, cflag = 0, pflag = 0, rflag = 0;
-    int unrecognizedflag = 0, missinginputfile = 0, outputunwriteable = 0;
+    int unrecognizedflag = 0;
 
     while ((opt = getopt(argc, argv, "i:o:c:p:r:")) != -1){
+        printf("OPT: %c\n", opt);
+        fflush(stdout);
         switch (opt){
             case 'i':
                 iflag++;
-                if (optarg == NULL){
-                    return MISSING_ARGUMENT;
+                if (optind < argc){
+                    if (optarg[0] == '-'){
+                        return MISSING_ARGUMENT;
+                    }
                 }
-                FILE *fp = fopen(optarg, "r");
-                if (fp == NULL){
-                    missinginputfile = 1;
-                }
-                else{
-                    fclose(fp);
-                }
-                // iname = optarg;
+                iname = optarg;
+                printf("%s\n", iname);
                 break;
             case 'o':
                 oflag++;
-                if (optarg == NULL){
-                    return MISSING_ARGUMENT;
+                if (optind < argc){
+                    if (optarg[0] == '-'){
+                        return MISSING_ARGUMENT;
+                    }
                 }
-                FILE *file = fopen(optarg, "w");
-                if (file == NULL){
-                    outputunwriteable = 1;
-                }
-                else{
-                    fclose(file);
-                }
-                // oname = optarg;
+                oname = optarg;
+                printf("%s\n", oname);
                 break;
             case 'c':
                 cflag++;
-                if (optarg == NULL){
-                    return MISSING_ARGUMENT;
+                if (optind < argc){
+                    if (optarg[0] == '-'){
+                        return MISSING_ARGUMENT;
+                    }
                 }
-                // cname = optarg;
+                cname = optarg;
+                printf("%s\n", cname);
                 break;
             case 'p':
                 pflag++;
-                if (optarg == NULL){
-                    return MISSING_ARGUMENT;
+                if (optind < argc){
+                    if (optarg[0] == '-'){
+                        return MISSING_ARGUMENT;
+                    }
                 }
-                // pname = optarg;
+                pname = optarg;
+                printf("%s\n", pname);
                 break;
             case 'r':
                 rflag++;
-                if (optarg == NULL){
+                if (optarg[0] == '-'){
                     return MISSING_ARGUMENT;
                 }
+                rname = optarg;
+                printf("%s\n", rname);
                 break;
-                // rname = optarg;
-            case '?':
+            case '?': 
+                if (optind == argc){
+                    return MISSING_ARGUMENT;
+                }   
                 unrecognizedflag = 1;
                 break;
         }
     }
     if (iflag == 0 || oflag == 0){
-            return MISSING_ARGUMENT;
+        return MISSING_ARGUMENT;
     }
     if (unrecognizedflag == 1){
         return UNRECOGNIZED_ARGUMENT;
@@ -86,12 +96,24 @@ int main(int argc, char **argv) {
     if (iflag > 1 || oflag > 1 || cflag > 1 || pflag > 1 || rflag > 1){
         return DUPLICATE_ARGUMENT;
     }
-    if (missinginputfile == 1){
+    FILE *fp = fopen(iname, "r");
+    if (fp == NULL){
         return INPUT_FILE_MISSING;
     }
-    if(outputunwriteable == 1){
+    else{
+        fclose(fp);
+    }
+    
+    fp = fopen(oname, "w");
+    if (fp == NULL){
         return OUTPUT_FILE_UNWRITABLE;
     }
+    else{
+        fclose(fp);
+    }
 
+    // if (pname != NULL && cname == NULL){
+    //     return C_ARGUMENT_MISSING;
+    // }
     return 0;
 }
