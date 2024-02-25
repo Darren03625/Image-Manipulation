@@ -151,7 +151,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("\n%d", counter);
     if (counter != 5){
         return R_ARGUMENT_INVALID;
     }
