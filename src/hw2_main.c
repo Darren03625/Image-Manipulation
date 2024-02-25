@@ -1,14 +1,14 @@
-// #include "hw2.h"
+#include "hw2.h"
 
-#define MISSING_ARGUMENT 1
-#define UNRECOGNIZED_ARGUMENT 2
-#define DUPLICATE_ARGUMENT 3
-#define INPUT_FILE_MISSING 4
-#define OUTPUT_FILE_UNWRITABLE 5
-#define C_ARGUMENT_MISSING 6
-#define C_ARGUMENT_INVALID 7
-#define P_ARGUMENT_INVALID 8
-#define R_ARGUMENT_INVALID 9
+// #define MISSING_ARGUMENT 1
+// #define UNRECOGNIZED_ARGUMENT 2
+// #define DUPLICATE_ARGUMENT 3
+// #define INPUT_FILE_MISSING 4
+// #define OUTPUT_FILE_UNWRITABLE 5
+// #define C_ARGUMENT_MISSING 6
+// #define C_ARGUMENT_INVALID 7
+// #define P_ARGUMENT_INVALID 8
+// #define R_ARGUMENT_INVALID 9
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,8 +28,6 @@ int main(int argc, char **argv) {
     int unrecognizedflag = 0;
 
     while ((opt = getopt(argc, argv, "i:o:c:p:r:")) != -1){
-        printf("OPT: %c\n", opt);
-        fflush(stdout);
         switch (opt){
             case 'i':
                 iflag++;
@@ -39,7 +37,6 @@ int main(int argc, char **argv) {
                     }
                 }
                 iname = optarg;
-                printf("%s\n", iname);
                 break;
             case 'o':
                 oflag++;
@@ -49,7 +46,6 @@ int main(int argc, char **argv) {
                     }
                 }
                 oname = optarg;
-                printf("%s\n", oname);
                 break;
             case 'c':
                 cflag++;
@@ -59,7 +55,6 @@ int main(int argc, char **argv) {
                     }
                 }
                 cname = optarg;
-                printf("%s\n", cname);
                 break;
             case 'p':
                 pflag++;
@@ -69,7 +64,6 @@ int main(int argc, char **argv) {
                     }
                 }
                 pname = optarg;
-                printf("%s\n", pname);
                 break;
             case 'r':
                 rflag++;
@@ -77,7 +71,6 @@ int main(int argc, char **argv) {
                     return MISSING_ARGUMENT;
                 }
                 rname = optarg;
-                printf("%s\n", rname);
                 break;
             case '?': 
                 if (optind == argc){
@@ -97,7 +90,6 @@ int main(int argc, char **argv) {
         return DUPLICATE_ARGUMENT;
     }
     FILE *fp;
-    printf("\n%s", iname);
     if ((fp = fopen(iname, "r")) == NULL){
         return INPUT_FILE_MISSING;
     }
@@ -117,44 +109,59 @@ int main(int argc, char **argv) {
         return C_ARGUMENT_MISSING;
     }
 
-    int counter = 1;
-    printf("\n%s", cname);
     if (cname != NULL){
+        int counter = 1;
         for (int i = 0; cname[i] != '\0'; i++){
             if (cname[i] == ',' && strtoul(&cname[i+1], NULL, 10) > 0){
                 counter++;
             }
         }
-    }
-
-    if(counter != 4){
+        if(counter != 4){
         return C_ARGUMENT_INVALID;
+        }
     }
 
-    counter = 1;
     if (pname != NULL){
+        int counter = 1;
         for (int i = 0; pname[i] != '\0'; i++){
             if (pname[i] == ',' && strtoul(&pname[i+1], NULL, 10) > 0){
                 counter++;
             }
         }
-    }
-
-    if (counter != 2){
+        if (counter != 2){
         return P_ARGUMENT_INVALID;
-    }
-
-    counter = 1;
-    if (pname != NULL){
-        for (int i = 0; pname[i] != '\0'; i++){
-            if (pname[i] == ',' && pname[i] != '\0'){
-                counter++;
-            }
         }
     }
 
-    if (counter != 5){
+    if (rname != NULL){
+        int counter = 1;
+        for (int i = 0; rname[i] != '\0'; i++){
+            if (rname[i] == ',' && rname[i] != '\0'){
+                counter++;
+            }
+        }
+
+        if (counter >= 2){
+            char* p = rname;
+            int length = 0;
+            while (*rname != '.' && *rname != '\0'){
+                p++;
+                rname++;
+            }
+            while(*p != '"' && *p != '\0'){
+                p++;
+                length++;
+            }
+            char substring[length+1];
+            strncpy(substring, rname, length);
+            substring[length] = '\0';
+            if ((fp = fopen(substring, "r")) == NULL){
+                return R_ARGUMENT_INVALID;
+            }
+        }
+        if (counter != 5){
         return R_ARGUMENT_INVALID;
+        }
     }
 
     return 0;
