@@ -215,8 +215,8 @@ int main(int argc, char **argv) {
             char lines[20 * width * height + 1];
             unsigned long numbersArray[20 * width * height + 1];
             unsigned long counter = 0;
-            while (fgets(lines, sizeof(lines), fp) != NULL){
-                
+            while (fgets(lines, sizeof(lines), fp) != NULL){  // gets each line as a string and stores in the array lines
+            // splits the line using strtok using " " and store each number in numbersArray by parsing it
                 char *portion = strtok(lines, " ");
                 while (portion != NULL){
                     if (strcmp(portion, "\n") != 0){
@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
             }
 
             unsigned long uniqueColors[counter];
-            unsigned long uniqueColorCounter = 0;
+            unsigned long uniqueColorCounter = 0; // test if the colors are unique, if unique then add into the uniquecolor array
             for (i = 0; i < counter; i+= 3){
 
                 int unique = 1;
@@ -259,7 +259,7 @@ int main(int argc, char **argv) {
 
             unsigned long colorEntries[counter]; 
             unsigned long index = 0;
-            for(i = 0; i < counter; i+=3){
+            for(i = 0; i < counter; i+=3){  // gets rid of duplicates 
 
                 for (unsigned long j = 0; j < uniqueColorCounter; j++){
                     if (uniqueColors[j * 3] == numbersArray[i] && uniqueColors[j * 3 + 1] == numbersArray[i+1] && uniqueColors[j * 3 + 2] == numbersArray[i+2]){
@@ -296,6 +296,13 @@ int main(int argc, char **argv) {
             inputString[strlen(iname) - 2] = 'p';
             inputString[strlen(iname) - 3] = 'p';
             file = fopen(inputString, "w");
+
+            char dimensions[9];
+            fgets(dimensions, sizeof(dimensions), fp);
+            fgets(dimensions, sizeof(dimensions), fp);
+            
+
+
             fputs("PPM\n", file);
 
             fclose(file);
