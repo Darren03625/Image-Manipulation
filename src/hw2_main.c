@@ -194,15 +194,15 @@ int main(int argc, char **argv) {
     strncpy(filetype2, p, 3);
     filetype2[3] = '\0';
 
-    char inputString[strlen(iname)+1];
-    strncpy(inputString, iname, strlen(iname));
-    inputString[strlen(iname)] = '\0';
-    printf("ben");
+    // char inputString[strlen(iname)+1];
+    // strncpy(inputString, iname, strlen(iname));
+    // inputString[strlen(iname)] = '\0';
+    // printf("ben");
     
-    if (strcmp(filetype1, filetype2) == 0){
-        fp = fopen(iname, "w");
-        fclose(fp);
-    }
+    // if (strcmp(filetype1, filetype2) == 0){
+    //     fp = fopen(iname, "w");
+    //     fclose(fp);
+    // }
     // else{
     //     fp = fopen(iname, "r");  // read from input file
     //     FILE *file;
