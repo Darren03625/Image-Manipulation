@@ -203,103 +203,103 @@ int main(int argc, char **argv) {
         fp = fopen(iname, "w");
         fclose(fp);
     }
-    else{
-        fp = fopen(iname, "r");  // read from input file
-        FILE *file;
-        if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "sbu") == 0){ // this means input file is ppm, and output file is sbu, we need to convert input file from ppm to sbu
-            inputString[strlen(iname) - 1] = 'u';
-            inputString[strlen(iname) - 2] = 'b';
-            inputString[strlen(iname) - 3] = 's';
-            file = fopen(inputString, "w"); // write to a new output file
+    // else{
+    //     fp = fopen(iname, "r");  // read from input file
+    //     FILE *file;
+    //     if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "sbu") == 0){ // this means input file is ppm, and output file is sbu, we need to convert input file from ppm to sbu
+    //         inputString[strlen(iname) - 1] = 'u';
+    //         inputString[strlen(iname) - 2] = 'b';
+    //         inputString[strlen(iname) - 3] = 's';
+    //         file = fopen(inputString, "w"); // write to a new output file
 
-            char dimensions[9];
-            fgets(dimensions, sizeof(dimensions), fp);  // reads in the PPM, used to skip a line 
-            fgets(dimensions, sizeof(dimensions), fp);  // reads in the dimensions and overwrites PPM
+    //         char dimensions[9];
+    //         fgets(dimensions, sizeof(dimensions), fp);  // reads in the PPM, used to skip a line 
+    //         fgets(dimensions, sizeof(dimensions), fp);  // reads in the dimensions and overwrites PPM
 
-            unsigned long width = strtoul(strtok(dimensions, " "), NULL, 10);
-            unsigned long height = strtoul(strtok(NULL, " "), NULL, 10);
+    //         unsigned long width = strtoul(strtok(dimensions, " "), NULL, 10);
+    //         unsigned long height = strtoul(strtok(NULL, " "), NULL, 10);
 
-            fgets(dimensions, sizeof(dimensions), fp); // used to skip the line "255" in PPM file
+    //         fgets(dimensions, sizeof(dimensions), fp); // used to skip the line "255" in PPM file
 
-            char lines[100 * width * height + 1];
-            unsigned long numbersArray[100 * width * height + 1];
-            unsigned long counter = 0;
-            while (fgets(lines, sizeof(lines), fp) != NULL){  // gets each line as a string and stores in the array lines
-            // splits the line using strtok using " " and store each number in numbersArray by parsing it
-                char *portion = strtok(lines, " ");
-                while (portion != NULL){
-                    if (strcmp(portion, "\n") != 0){
-                        numbersArray[counter] = strtoul(portion, NULL, 10);
-                        counter++;
-                    }
-                    portion = strtok(NULL, " ");   
-                }
-            }
+    //         char lines[100 * width * height + 1];
+    //         unsigned long numbersArray[100 * width * height + 1];
+    //         unsigned long counter = 0;
+    //         while (fgets(lines, sizeof(lines), fp) != NULL){  // gets each line as a string and stores in the array lines
+    //         // splits the line using strtok using " " and store each number in numbersArray by parsing it
+    //             char *portion = strtok(lines, " ");
+    //             while (portion != NULL){
+    //                 if (strcmp(portion, "\n") != 0){
+    //                     numbersArray[counter] = strtoul(portion, NULL, 10);
+    //                     counter++;
+    //                 }
+    //                 portion = strtok(NULL, " ");   
+    //             }
+    //         }
 
-            unsigned long uniqueColors[counter];
-            unsigned long uniqueColorCounter = 0; // test if the colors are unique, if unique then add into the uniquecolor array
-            for (unsigned long k = 0; k < counter; k+= 3){
+    //         unsigned long uniqueColors[counter];
+    //         unsigned long uniqueColorCounter = 0; // test if the colors are unique, if unique then add into the uniquecolor array
+    //         for (unsigned long k = 0; k < counter; k+= 3){
 
-                int unique = 1;
-                for (unsigned long j = 0; j < uniqueColorCounter; j++){
-                    if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
-                        unique = 0;
-                        break;
-                    } 
-                }
+    //             int unique = 1;
+    //             for (unsigned long j = 0; j < uniqueColorCounter; j++){
+    //                 if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
+    //                     unique = 0;
+    //                     break;
+    //                 } 
+    //             }
 
-                if (unique == 1){
-                    uniqueColors[uniqueColorCounter * 3] = numbersArray[k];
-                    uniqueColors[uniqueColorCounter * 3 + 1] = numbersArray[k + 1];
-                    uniqueColors[uniqueColorCounter * 3 + 2] = numbersArray[k + 2];
-                    uniqueColorCounter++;
-                }
-            }
+    //             if (unique == 1){
+    //                 uniqueColors[uniqueColorCounter * 3] = numbersArray[k];
+    //                 uniqueColors[uniqueColorCounter * 3 + 1] = numbersArray[k + 1];
+    //                 uniqueColors[uniqueColorCounter * 3 + 2] = numbersArray[k + 2];
+    //                 uniqueColorCounter++;
+    //             }
+    //         }
             
-            fputs("SBU\n", file);  // writes SBU to the file                                             SBU
-            fprintf(file, "%ld %ld\n", width, height);  // writes dimensions to the file                 width height
-            fprintf(file, "%ld\n", uniqueColorCounter); // writes # unique colors to file                #
+    //         fputs("SBU\n", file);  // writes SBU to the file                                             SBU
+    //         fprintf(file, "%ld %ld\n", width, height);  // writes dimensions to the file                 width height
+    //         fprintf(file, "%ld\n", uniqueColorCounter); // writes # unique colors to file                #
             
-            for (unsigned long k = 0; k < uniqueColorCounter * 3 - 1; k++){ // writes all the color codes of unique colors
-                fprintf(file, "%ld ", uniqueColors[k]);
-            }
+    //         for (unsigned long k = 0; k < uniqueColorCounter * 3 - 1; k++){ // writes all the color codes of unique colors
+    //             fprintf(file, "%ld ", uniqueColors[k]);
+    //         }
 
-            fprintf(file, "%ld\n", uniqueColors[uniqueColorCounter * 3 - 1]);
+    //         fprintf(file, "%ld\n", uniqueColors[uniqueColorCounter * 3 - 1]);
 
-            unsigned long colorEntries[counter]; 
-            unsigned long index = 0;
-            for(unsigned long k = 0; k < counter; k+=3){  // gets rid of duplicates 
+    //         unsigned long colorEntries[counter]; 
+    //         unsigned long index = 0;
+    //         for(unsigned long k = 0; k < counter; k+=3){  // gets rid of duplicates 
 
-                for (unsigned long j = 0; j < uniqueColorCounter; j++){
-                    if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
-                        colorEntries[index++] = j; 
-                        break;
-                    }
-                }
-            }
+    //             for (unsigned long j = 0; j < uniqueColorCounter; j++){
+    //                 if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
+    //                     colorEntries[index++] = j; 
+    //                     break;
+    //                 }
+    //             }
+    //         }
 
             
-            counter = 1;
-            for (unsigned long k = 0; k < index; k++){
-                if (k < index - 1 && colorEntries[k] == colorEntries[k+1]){
-                    counter++;
-                }
-                else{
-                    if (counter > 1){
-                        fprintf(file, "*%ld %ld ", counter, colorEntries[k]);
-                        counter = 1;
-                    }
-                    else{
-                        fprintf(file, "%ld ", colorEntries[k]);
-                    }
+    //         counter = 1;
+    //         for (unsigned long k = 0; k < index; k++){
+    //             if (k < index - 1 && colorEntries[k] == colorEntries[k+1]){
+    //                 counter++;
+    //             }
+    //             else{
+    //                 if (counter > 1){
+    //                     fprintf(file, "*%ld %ld ", counter, colorEntries[k]);
+    //                     counter = 1;
+    //                 }
+    //                 else{
+    //                     fprintf(file, "%ld ", colorEntries[k]);
+    //                 }
         
-                }
-            }
+    //             }
+    //         }
 
-            fclose(file);
-            fclose(fp);
+    //         fclose(file);
+    //         fclose(fp);
 
-        }
+    //     }
         // else{ // this means we need to convert the input file from sbu to output ppm
         //     inputString[strlen(iname) - 1] = 'm';
         //     inputString[strlen(iname) - 2] = 'p';
@@ -367,8 +367,7 @@ int main(int argc, char **argv) {
         //     fclose(file);
         //     fclose(fp);
 
-        // }
-    }   
+        // }  
 
     return 0;
 }
