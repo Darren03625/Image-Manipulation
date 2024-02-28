@@ -200,83 +200,56 @@ int main(int argc, char **argv) {
 
     
     if (strcmp(filetype1, filetype2) == 0){
-        FILE *file = fopen(iname, "r");
-        if (strcmp(filetype1, "ppm") == 0 && strcmp (filetype2, "ppm") == 0){
-            FILE *tempFile = fopen("./temp.ppm", "w");
-            
-            int c;
-            while ((c = fgetc(file)) != EOF){
-                fputc(c, tempFile);
-            }
-
-            fclose(file);
-            fclose(tempFile);
-
-            remove(iname);
-            rename("./temp.ppm", iname);
-        }
-        else{
-            FILE *tempFile = fopen("./temp.sbu", "w");
-            
-            int c;
-            while ((c = fgetc(file)) != EOF){
-                fputc(c, tempFile);
-            }
-
-            fclose(file);
-            fclose(tempFile);
-
-            remove(iname);
-            rename("./temp.sbu", iname);
-        }
-        // if (strcmp(filetype1, "ppm") == 0 && strcmp (filetype2, "ppm") == 0){ // ppm to ppm
-        //     char dimensions[100];
-        //     fgets(dimensions, sizeof(dimensions), read); //skips the PPM part
-        //     fgets(dimensions, sizeof(dimensions), read); // reads the dimensions
+        FILE *read = fopen(iname, "r");
+        if (strcmp(filetype1, "ppm") == 0 && strcmp (filetype2, "ppm") == 0){ // ppm to ppm
+            char dimensions[100];
+            fgets(dimensions, sizeof(dimensions), read); //skips the PPM part
+            fgets(dimensions, sizeof(dimensions), read); // reads the dimensions
              
-        //     unsigned long width = strtoul(strtok(dimensions, " "), NULL, 10); // extract width 
-        //     unsigned long height = strtoul(strtok(NULL, " "), NULL, 10);  // extract height
+            unsigned long width = strtoul(strtok(dimensions, " "), NULL, 10); // extract width 
+            unsigned long height = strtoul(strtok(NULL, " "), NULL, 10);  // extract height
             
-        //     fgets(dimensions, sizeof(dimensions), read); // skips the 255 part
+            fgets(dimensions, sizeof(dimensions), read); // skips the 255 part
             
-        //     char lines[width * height * 5 + 1]; // uses char array as a temp holder
+            char lines[width * height]; // uses char array as a temp holder
 
-        //     unsigned long values[width * height * 5 + 1]; // stores the values here
-        //     unsigned long counter = 0;
+            unsigned long values [width * height * 3]; // stores the values here
+            unsigned long counter = 0;
 
-        //     while(fgets(lines, sizeof(lines), read) != NULL){  //reads each line by line 
-        //         char *portion = strtok(lines, " ");       // splits each line based on space
-        //         while (portion != NULL){
-        //             if (*portion == '\n'){
-        //                 values[counter++] = 999999999;
-        //             }
-        //             else{
-        //                 values[counter++] = strtoul(portion, NULL, 10); // stores the body in values;
-        //             }
-        //             portion = strtok(NULL, " ");
-        //         }
-        //     }
+            while(fgets(lines, sizeof(lines), read) != NULL){  //reads each line by line 
+                char *portion = strtok(lines, " ");       // splits each line based on space
+                while (portion != NULL){
+                    if (*portion == '\n'){
+                        values[counter++] = 999999999;
+                    }
+                    else{
+                        values[counter++] = strtoul(portion, NULL, 10); // stores the body in values;
+                    }
+                    portion = strtok(NULL, " ");
+                }
+            }
+
             
-        //     fclose(read);
+            fclose(read);
             
-        //     FILE *write = fopen(iname, "w"); 
+            FILE *write = fopen("./tests/actual_outputs/result.ppm", "w"); 
 
-        //     fprintf(write, "P3\n");
-        //     fprintf(write, "%lu %lu\n", width, height);
-        //     fprintf(write, "%d\n", 255);
+            fprintf(write, "P3\n");
+            fprintf(write, "%lu %lu\n", width, height);
+            fprintf(write, "%d\n", 255);
 
-        //     for (i = 0; i < counter; i++){
-        //         if (values[i] == 999999999){
-        //             fputs("\n", write);
-        //         }
-        //         else{
-        //             fprintf(write, "%lu ", values[i]);
-        //         }
-        //     }
+            for (i = 0; i < counter; i++){
+                if (values[i] == 999999999){
+                    fputs("\n", write);
+                }
+                else{
+                    fprintf(write, "%lu ", values[i]);
+                }
+            }
             
-        //     fclose(write);
+            fclose(write);
 
-        // }
+        }
     //     else{ // sbu to sbu;
     //         char dimensions[100];
     //         fgets(dimensions, sizeof(dimensions), read); // skips the SBU header
@@ -358,9 +331,8 @@ int main(int argc, char **argv) {
     //             }
     //         }
     //         fclose(write);
-    //     }
-        
-    }
+    //     } 
+    // }
     // else{
     //     fp = fopen(iname, "r");  // read from input file
     //     FILE *file;
@@ -458,74 +430,75 @@ int main(int argc, char **argv) {
     //         fclose(fp);
 
     //     }
-        // else{ // this means we need to convert the input file from sbu to output ppm
-        //     inputString[strlen(iname) - 1] = 'm';
-        //     inputString[strlen(iname) - 2] = 'p';
-        //     inputString[strlen(iname) - 3] = 'p';
-        //     file = fopen(inputString, "w");
+    //     else{ // this means we need to convert the input file from sbu to output ppm
+    //         inputString[strlen(iname) - 1] = 'm';
+    //         inputString[strlen(iname) - 2] = 'p';
+    //         inputString[strlen(iname) - 3] = 'p';
+    //         file = fopen(inputString, "w");
 
-        //     char dimensions[9];
-        //     fgets(dimensions, sizeof(dimensions), fp);  // used to skip the SBU header
-        //     fgets(dimensions, sizeof(dimensions), fp);  // used to read dimensions
+    //         char dimensions[9];
+    //         fgets(dimensions, sizeof(dimensions), fp);  // used to skip the SBU header
+    //         fgets(dimensions, sizeof(dimensions), fp);  // used to read dimensions
             
-        //     unsigned long width = strtoul(strtok(dimensions," "), NULL, 10);  // splits the string dimension by " ", extracts width
-        //     unsigned long height = strtoul(strtok(NULL, " "), NULL, 10);  // splits the string dimension by " ", extracts height
+    //         unsigned long width = strtoul(strtok(dimensions," "), NULL, 10);  // splits the string dimension by " ", extracts width
+    //         unsigned long height = strtoul(strtok(NULL, " "), NULL, 10);  // splits the string dimension by " ", extracts height
 
-        //     fgets(dimensions, sizeof(dimensions), fp); // used to read the # unique colors
+    //         fgets(dimensions, sizeof(dimensions), fp); // used to read the # unique colors
 
-        //     // unsigned long uniqueColorCounter = strtoul(dimensions, NULL, 10); // number of RGB triplets
+    //         // unsigned long uniqueColorCounter = strtoul(dimensions, NULL, 10); // number of RGB triplets
 
-        //     char lines[100 * width * height + 1];
-        //     unsigned long colorsArray[100 * width * height + 1]; // stores all the unique colors
-        //     unsigned long counter = 0; // size of colorsArray
+    //         char lines[100 * width * height + 1];
+    //         unsigned long colorsArray[100 * width * height + 1]; // stores all the unique colors
+    //         unsigned long counter = 0; // size of colorsArray
 
-        //     fgets(lines, sizeof(lines), fp); // used to read the unique color values and store in lines
-        //     char *portion = strtok(lines, " "); 
+    //         fgets(lines, sizeof(lines), fp); // used to read the unique color values and store in lines
+    //         char *portion = strtok(lines, " "); 
                 
-        //     while (portion != NULL){ // parses the unique color values and store it in colorsArray
-        //         colorsArray[counter++] = strtoul(portion, NULL, 10);
-        //         portion = strtok(NULL, " ");
-        //     }
+    //         while (portion != NULL){ // parses the unique color values and store it in colorsArray
+    //             colorsArray[counter++] = strtoul(portion, NULL, 10);
+    //             portion = strtok(NULL, " ");
+    //         }
 
-        //     fgets(lines, sizeof(lines), fp); // used to read the line with color value inputs 
+    //         fgets(lines, sizeof(lines), fp); // used to read the line with color value inputs 
 
-        //     fputs("PPM\n", file);
-        //     fprintf(file, "%lu %lu\n", width, height);
-        //     fputs("255\n", file);
+    //         fputs("PPM\n", file);
+    //         fprintf(file, "%lu %lu\n", width, height);
+    //         fputs("255\n", file);
 
-        //     // unsigned long colorEntries[20 * width * height + 1];
-        //     // unsigned long numColorEntries = 0;
-        //     portion = strtok(lines, " ");
-        //     while (portion != NULL){
-        //         if (*portion == '*'){ // encounters a *  for example *2 3 10 
-        //             char *pointer = portion;
-        //             pointer++;
-        //             unsigned long consecutiveOccurrences = *pointer  - '0'; //extract value after the * which is 2
+    //         // unsigned long colorEntries[20 * width * height + 1];
+    //         // unsigned long numColorEntries = 0;
+    //         portion = strtok(lines, " ");
+    //         while (portion != NULL){
+    //             if (*portion == '*'){ // encounters a *  for example *2 3 10 
+    //                 char *pointer = portion;
+    //                 pointer++;
+    //                 unsigned long consecutiveOccurrences = *pointer  - '0'; //extract value after the * which is 2
 
-        //             portion = strtok(NULL, " "); //move the pointer forwards now we have 3
+    //                 portion = strtok(NULL, " "); //move the pointer forwards now we have 3
                     
-        //             unsigned long colorIndex = strtoul(portion, NULL, 10) * 3; // store this color index 3 which is spot 9 in the uniqueColorArray and take colorIndex+1 and colorIndex+2
+    //                 unsigned long colorIndex = strtoul(portion, NULL, 10) * 3; // store this color index 3 which is spot 9 in the uniqueColorArray and take colorIndex+1 and colorIndex+2
 
-        //             for (unsigned long k = 0; k < consecutiveOccurrences; k++){ //prints the 3 RGB values stored in the uniqueColorarray based on how the number after the *
-        //                 fprintf(file, "%lu %lu %lu ", colorsArray[colorIndex], colorsArray[colorIndex + 1], colorsArray[colorIndex + 2]);
-        //             }
+    //                 for (unsigned long k = 0; k < consecutiveOccurrences; k++){ //prints the 3 RGB values stored in the uniqueColorarray based on how the number after the *
+    //                     fprintf(file, "%lu %lu %lu ", colorsArray[colorIndex], colorsArray[colorIndex + 1], colorsArray[colorIndex + 2]);
+    //                 }
 
-        //             portion = strtok(NULL, " "); // move the pointer forwards to 10 now
-        //         }
-        //         else {            // encounters a normal number like 8 *2 6 10
-        //             int colorIndex = strtoul(portion, NULL, 10) * 3;  // stores the color index 8 which is spot 24 in the uniqueColorArray take next 2 values as well
+    //                 portion = strtok(NULL, " "); // move the pointer forwards to 10 now
+    //             }
+    //             else {            // encounters a normal number like 8 *2 6 10
+    //                 int colorIndex = strtoul(portion, NULL, 10) * 3;  // stores the color index 8 which is spot 24 in the uniqueColorArray take next 2 values as well
 
-        //             fprintf(file, "%lu %lu %lu ", colorsArray[colorIndex], colorsArray[colorIndex+1], colorsArray[colorIndex+2]); // prints one time because no preceding * 
+    //                 fprintf(file, "%lu %lu %lu ", colorsArray[colorIndex], colorsArray[colorIndex+1], colorsArray[colorIndex+2]); // prints one time because no preceding * 
 
-        //             portion = strtok(NULL, " "); //moves the pointe forwards to *2 so the while loop can reevaluate
-        //         }
+    //                 portion = strtok(NULL, " "); //moves the pointe forwards to *2 so the while loop can reevaluate
+    //             }
                 
-        //     }
+    //         }
 
-        //     fclose(file);
-        //     fclose(fp);
+    //         fclose(file);
+    //         fclose(fp);
 
-        // }  
-        //
+    //     }  
+    // }
     return 0;
+    }
 }
