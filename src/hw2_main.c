@@ -193,11 +193,6 @@ int main(int argc, char **argv) {
     }
     strncpy(filetype2, p, 3);
     filetype2[3] = '\0';
-
-    // char inputString[strlen(iname)+1];         // copies over iname into a char array called inputString so you can modify the file format from .ppm to .sbu and vice versa
-    // strncpy(inputString, iname, strlen(iname));
-    // inputString[strlen(iname)] = '\0';
-
     
     if (strcmp(filetype1, filetype2) == 0){
         FILE *read = fopen(iname, "r");
@@ -345,7 +340,10 @@ int main(int argc, char **argv) {
                     unsigned long colorIndex = strtoul(portion, NULL, 10) * 3; // store this color index 3 which is spot 9 in the uniqueColorArray and take colorIndex+1 and colorIndex+2
 
                     for (unsigned long k = 0; k < consecutiveOccurrences; k++){ //prints the 3 RGB values stored in the uniqueColorarray based on how the number after the *
-                        fprintf(write, "%lu %lu %lu ", colorsArray[colorIndex], colorsArray[colorIndex + 1], colorsArray[colorIndex + 2]);
+                        fprintf(write, "%lu %lu %lu", colorsArray[colorIndex], colorsArray[colorIndex + 1], colorsArray[colorIndex + 2]);
+                        if (k != consecutiveOccurrences - 1){
+                            fprintf(write, "\n");
+                        }
                     }
 
                     portion = strtok(NULL, " "); // move the pointer forwards to 10 now
@@ -353,11 +351,13 @@ int main(int argc, char **argv) {
                 else {            // encounters a normal number like 8 *2 6 10
                     unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;  // stores the color index 8 which is spot 24 in the uniqueColorArray take next 2 values as well
 
-                    fprintf(write, "%lu %lu %lu ", colorsArray[colorIndex], colorsArray[colorIndex+1], colorsArray[colorIndex+2]); // prints one time because no preceding * 
+                    fprintf(write, "%lu %lu %lu", colorsArray[colorIndex], colorsArray[colorIndex+1], colorsArray[colorIndex+2]); // prints one time because no preceding * 
 
                     portion = strtok(NULL, " "); //moves the pointe forwards to *2 so the while loop can reevaluate
                 }
-                
+                if (portion != NULL){
+                    fprintf(write, "\n");
+                }
             }
 
             fclose(write);
