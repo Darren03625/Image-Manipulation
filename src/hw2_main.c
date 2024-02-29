@@ -263,7 +263,7 @@ int main(int argc, char **argv) {
             fprintf(write, "%lu %lu\n", width, height);  // writes dimensions to the file                 width height
             fprintf(write, "%lu\n", uniqueColorCounter); // writes # unique colors to file                #
             
-            for (unsigned long k = 0; k < uniqueColo`rCounter * 3 - 1; k++){ // writes all the color codes of unique colors
+            for (unsigned long k = 0; k < uniqueColorCounter * 3 - 1; k++){ // writes all the color codes of unique colors
                 fprintf(write, "%lu ", uniqueColors[k]);
             }
 
