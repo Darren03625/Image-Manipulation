@@ -359,7 +359,10 @@ int main(int argc, char **argv) {
                     fprintf(write, "\n");
                 }
             }
-
+            
+            fprintf(write, "\n");
+            fprintf(write, "\n");
+        
             fclose(write);
             fclose(read);
 
