@@ -228,6 +228,135 @@ int main(int argc, char **argv) {
                     portion = strtok(NULL, " ");   
                 }
             }
+            if (cflag == 1 && pflag == 1){ 
+                // extract C arguments
+                unsigned long counter1 = 0;
+                unsigned long carguments[4];
+                char *substring = strtok(cname, ",");
+                while (substring != NULL){
+                    carguments[counter1] = strtoul(substring, NULL, 10);
+                    counter1++;
+                    substring = strtok(NULL, ",");
+                }
+
+                unsigned long startRow = carguments[0];
+                unsigned long startColumn = carguments[1];
+                unsigned long numColumns = carguments[2];
+                unsigned long numRows = carguments[3];
+                unsigned long sizeToCopy = carguments[2] * carguments[3] * 3;
+
+
+                // extract P arguments
+                counter1 = 0;
+                unsigned long parguments[2];
+                substring = strtok(pname, ",");
+                while (substring != NULL){
+                    parguments[counter1] = strtoul(substring, NULL, 10);
+                    counter1++;
+                    substring = strtok(NULL, ",");
+                }
+
+                unsigned long startRowPaste = parguments[0];
+                unsigned long startColumnPaste = parguments[1];
+
+                unsigned long counter2 = 0;
+                unsigned long copiedValues[sizeToCopy];
+                unsigned long startingXY = (startRow * width * 3) + (startColumn * 3);
+                unsigned long val; // num elements to paste in the row
+                unsigned long val2; 
+                for(unsigned long row = 0; row < numRows && ((startRow + row) < height); row++){
+                    for(unsigned long column = 0; column < numColumns && ((startColumn + column) < width); column++){
+                        unsigned long currentSpot = startingXY + (column * 3);
+
+                        if (currentSpot + 2 < width * height * 3 && ((startColumn + column) < width) && ((startRow + row) < height)){
+                            copiedValues[counter2++] = numbersArray[currentSpot];
+                            copiedValues[counter2++] = numbersArray[currentSpot + 1];
+                            copiedValues[counter2++] = numbersArray[currentSpot + 2];
+                        }
+                        if (row == 0){
+                            val = column;
+                        }
+                    }
+                    if ((startingXY + (width * 3 )) < (height * width * 3)){
+                        startingXY = startingXY + (width * 3);
+                    }
+                    val2 = row;
+                }
+
+              
+                counter2 = 0;
+                unsigned long column;
+                unsigned long startingXYPaste = (startRowPaste * width * 3) + (startColumnPaste * 3);
+                for(unsigned long row = 0; row <= val2 && ((startRowPaste + row) < height); row++){
+                    for(column = 0; column <= val && ((startColumnPaste + column) < width); column++){
+                        unsigned long currentSpot = startingXYPaste + (column * 3);
+
+                        if (currentSpot + 2 < width * height * 3){
+                            numbersArray[currentSpot] = copiedValues[counter2];
+                            numbersArray[currentSpot + 1] = copiedValues[counter2 + 1];
+                            numbersArray[currentSpot + 2] = copiedValues[counter2 + 2];
+                            counter2 +=3; 
+                        }
+                    }
+                    while (column <= val){ // if column <= val means we cant paste anymore in bc its going to go out of bounds
+                        counter2 += 3;  // therefore discard the rest of the values in the row in copiedValues
+                        column++;
+                    }
+                    if ((startingXYPaste + (width * 3)) < (height * width * 3)){
+                        startingXYPaste = startingXYPaste + (width * 3);
+                    }
+                }
+            }
+            
+            fprintf(write, "P3\n");
+            fprintf(write, "%lu %lu\n", width, height);
+            fprintf(write, "%d\n", 255);
+            for(unsigned long t = 0; t < counter; t+= 3){
+                fprintf(write, "%lu %lu %lu\n", numbersArray[t], numbersArray[t + 1], numbersArray[t + 2]);
+            }
+            fprintf(write, "\n");
+            fclose(write);
+            
+        }
+        else{
+            FILE *write = fopen(oname, "w");
+            char c;
+            while ((c = fgetc(read)) != EOF){
+                fputc(c, write);
+            } 
+            fclose(read);
+            fclose(write);
+        }
+    }
+    else{
+        FILE *read = fopen(iname, "r");  // read from input file
+    
+        if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "sbu") == 0){ // this means input file is ppm, and output file is sbu, we need to convert input file from ppm to sbu
+            FILE *write = fopen(oname, "w"); // write to a new output file
+            
+            char dimensions[100];
+            fgets(dimensions, sizeof(dimensions), read);  // reads in the PPM, used to skip a line 
+            fgets(dimensions, sizeof(dimensions), read);  // reads in the dimensions and overwrites PPM
+
+            unsigned long width = strtoul(strtok(dimensions, " "), NULL, 10); 
+            unsigned long height = strtoul(strtok(NULL, " "), NULL, 10); 
+
+            fgets(dimensions, sizeof(dimensions), read); // used to skip the line "255" in PPM file
+
+            char lines[width * height + 1];  // temporary holder for values;
+            unsigned long numbersArray[5 * width * height + 1];
+            unsigned long counter = 0;
+            while (fgets(lines, sizeof(lines), read) != NULL){  // gets each line as a string and stores in the array lines (line 4, 5, 6, ... in PPM)
+            // splits the line using strtok using " " and store each number in numbersArray by parsing it
+                char *portion = strtok(lines, " ");
+                while (portion != NULL){
+                    if (strcmp(portion, "\n") != 0){
+                        numbersArray[counter] = strtoul(portion, NULL, 10);
+                        counter++;
+                    }
+                    portion = strtok(NULL, " ");   
+                }
+            }
 
             if (cflag == 1 && pflag == 1){ 
                 // extract C arguments
@@ -307,65 +436,11 @@ int main(int argc, char **argv) {
                         startingXYPaste = startingXYPaste + (width * 3);
                     }
                 }
-        
-            }
-            
-            fprintf(write, "P3\n");
-            fprintf(write, "%lu %lu\n", width, height);
-            fprintf(write, "%d\n", 255);
-            for(unsigned long t = 0; t < counter; t+= 3){
-                fprintf(write, "%lu %lu %lu\n", numbersArray[t], numbersArray[t + 1], numbersArray[t + 2]);
-            }
-            fprintf(write, "\n");
-            fclose(write);
-            
-        }
-        else{
-            FILE *write = fopen(oname, "w");
-            char c;
-            while ((c = fgetc(read)) != EOF){
-                fputc(c, write);
-            } 
-            fclose(read);
-            fclose(write);
-        }
-    }
-    else{
-        FILE *read = fopen(iname, "r");  // read from input file
-    
-        if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "sbu") == 0){ // this means input file is ppm, and output file is sbu, we need to convert input file from ppm to sbu
-            FILE *write = fopen(oname, "w"); // write to a new output file
-            
-            char dimensions[100];
-            fgets(dimensions, sizeof(dimensions), read);  // reads in the PPM, used to skip a line 
-            fgets(dimensions, sizeof(dimensions), read);  // reads in the dimensions and overwrites PPM
-
-            unsigned long width = strtoul(strtok(dimensions, " "), NULL, 10); 
-            unsigned long height = strtoul(strtok(NULL, " "), NULL, 10); 
-
-            fgets(dimensions, sizeof(dimensions), read); // used to skip the line "255" in PPM file
-
-            char lines[width * height + 1];  // temporary holder for values;
-            unsigned long numbersArray[5 * width * height + 1];
-            unsigned long counter = 0;
-            while (fgets(lines, sizeof(lines), read) != NULL){  // gets each line as a string and stores in the array lines (line 4, 5, 6, ... in PPM)
-            // splits the line using strtok using " " and store each number in numbersArray by parsing it
-                char *portion = strtok(lines, " ");
-                while (portion != NULL){
-                    if (strcmp(portion, "\n") != 0){
-                        numbersArray[counter] = strtoul(portion, NULL, 10);
-                        counter++;
-                    }
-                    portion = strtok(NULL, " ");   
-                }
             }
 
             unsigned long uniqueColors[counter];
             unsigned long uniqueColorCounter = 0; // test if the colors are unique, if unique then add into the uniquecolor array
             for (unsigned long k = 0; k < counter; k+= 3){
-                if (numbersArray[k] == 999999999){
-                    k++;
-                }
                 int unique = 1;
                 for (unsigned long j = 0; j < uniqueColorCounter; j++){
                     if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
@@ -395,10 +470,6 @@ int main(int argc, char **argv) {
             unsigned long colorEntries[counter]; 
             unsigned long index = 0;
             for(unsigned long k = 0; k < counter; k+=3){  
-                if (numbersArray[k] == 999999999){
-                    k++;
-                }
-
                 for (unsigned long j = 0; j < uniqueColorCounter; j++){ // assigns the colorIndex of each PPM RGB pair and stores it into colorEntries
                     if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
                         colorEntries[index++] = j; 
@@ -471,9 +542,6 @@ int main(int argc, char **argv) {
 
                     for (unsigned long k = 0; k < consecutiveOccurrences; k++){ //prints the 3 RGB values stored in the uniqueColorarray based on how the number after the *
                         fprintf(write, "%lu %lu %lu", colorsArray[colorIndex], colorsArray[colorIndex + 1], colorsArray[colorIndex + 2]);
-                        if (k != consecutiveOccurrences - 1){
-                            fprintf(write, "\n");
-                        }
                     }
 
                     portion = strtok(NULL, " "); // move the pointer forwards to 10 now
@@ -485,12 +553,8 @@ int main(int argc, char **argv) {
 
                     portion = strtok(NULL, " "); //moves the pointe forwards to *2 so the while loop can reevaluate
                 }
-                if (portion != NULL){
-                    fprintf(write, "\n");
-                }
             }
             
-            fprintf(write, "\n");
             fprintf(write, "\n");
         
             fclose(write);
