@@ -114,7 +114,9 @@ int main(int argc, char **argv) {
 
     if (cname != NULL){
         int counter = 0;
-        char *substring = strtok(cname, ",");
+        char cnamecopy[strlen(cname) + 1];
+        strncpy(cnamecopy, cname, strlen(cname));
+        char *substring = strtok(cnamecopy, ",");
 
         while (substring != NULL){
             if (strtol(substring, NULL, 10) > 0){
@@ -125,12 +127,14 @@ int main(int argc, char **argv) {
         if(counter != 4){
         return C_ARGUMENT_INVALID;
         }
-    }
+    } 
 
     if (pname != NULL){
         int counter = 0;
 
-        char *substring = strtok(pname, ",");
+        char pnamecopy[strlen(pname) + 1];
+        strncpy(pnamecopy, pname, strlen(pname));
+        char *substring = strtok(pnamecopy, ",");
 
         while (substring != NULL){
             counter++;
@@ -193,16 +197,138 @@ int main(int argc, char **argv) {
     }
     strncpy(filetype2, p, 3);
     filetype2[3] = '\0';
-    
+
+
+
     if (strcmp(filetype1, filetype2) == 0){
         FILE *read = fopen(iname, "r");
-        FILE *write = fopen(oname, "w"); 
-        char c;
-        while ((c = fgetc(read)) != EOF){
-            fputc(c, write);
-        } 
-        fclose(read);
-        fclose(write);
+        if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "ppm") == 0){ //ppm to ppm
+            FILE *write = fopen(oname, "w");
+
+            char dimensions[100];
+            fgets(dimensions, sizeof(dimensions), read);  // reads in the PPM, used to skip a line 
+            fgets(dimensions, sizeof(dimensions), read);  // reads in the dimensions and overwrites PPM
+
+            unsigned long width = strtoul(strtok(dimensions, " "), NULL, 10); 
+            unsigned long height = strtoul(strtok(NULL, " "), NULL, 10); 
+
+            fgets(dimensions, sizeof(dimensions), read); // used to skip the line "255" in PPM file
+
+            char lines[width * height * 3 + 1];  // temporary holder for values;
+            unsigned long numbersArray[5 * width * height + 1];
+            unsigned long counter = 0;
+            while (fgets(lines, sizeof(lines), read) != NULL){  // gets each line as a string and stores in the array lines (line 4, 5, 6, ... in PPM)
+            // splits the line using strtok using " " and store each number in numbersArray by parsing it
+                char *portion = strtok(lines, " ");
+                while (portion != NULL){
+                    if (strcmp(portion, "\n") != 0){
+                        numbersArray[counter] = strtoul(portion, NULL, 10);
+                        counter++;
+                    }
+                    portion = strtok(NULL, " ");   
+                }
+            }
+
+            if (cflag == 1 && pflag == 1){ 
+                // extract C arguments
+                unsigned long counter1 = 0;
+                unsigned long carguments[4];
+                char *substring = strtok(cname, ",");
+                while (substring != NULL){
+                    carguments[counter1] = strtoul(substring, NULL, 10);
+                    counter1++;
+                    substring = strtok(NULL, ",");
+                }
+
+                unsigned long startRow = carguments[0];
+                unsigned long startColumn = carguments[1];
+                unsigned long numColumns = carguments[2];
+                unsigned long numRows = carguments[3];
+                unsigned long sizeToCopy = carguments[2] * carguments[3] * 3;
+
+
+                // extract P arguments
+                counter1 = 0;
+                unsigned long parguments[2];
+                substring = strtok(pname, ",");
+                while (substring != NULL){
+                    parguments[counter1] = strtoul(substring, NULL, 10);
+                    counter1++;
+                    substring = strtok(NULL, ",");
+                }
+
+                unsigned long startRowPaste = parguments[0];
+                unsigned long startColumnPaste = parguments[1];
+
+                unsigned long counter2 = 0;
+                unsigned long copiedValues[sizeToCopy];
+                unsigned long startingXY = (startRow * width * 3) + (startColumn * 3);
+                unsigned long val; // num elements to paste in the row
+                unsigned long val2; 
+                for(unsigned long row = 0; row < numRows && ((startRow + row) < height); row++){
+                    for(unsigned long column = 0; column < numColumns && ((startColumn + column) < width); column++){
+                        unsigned long currentSpot = startingXY + (column * 3);
+
+                        if (currentSpot + 2 < width * height * 3 && ((startColumn + column) < width) && ((startRow + row) < height)){
+                            copiedValues[counter2++] = numbersArray[currentSpot];
+                            copiedValues[counter2++] = numbersArray[currentSpot + 1];
+                            copiedValues[counter2++] = numbersArray[currentSpot + 2];
+                        }
+                        if (row == 0){
+                            val = column;
+                        }
+                    }
+                    if ((startingXY + (width * 3 )) < (height * width * 3)){
+                        startingXY = startingXY + (width * 3);
+                    }
+                    val2 = row;
+                }
+
+              
+                counter2 = 0;
+                unsigned long column;
+                unsigned long startingXYPaste = (startRowPaste * width * 3) + (startColumnPaste * 3);
+                for(unsigned long row = 0; row <= val2 && ((startRowPaste + row) < height); row++){
+                    for(column = 0; column <= val && ((startColumnPaste + column) < width); column++){
+                        unsigned long currentSpot = startingXYPaste + (column * 3);
+
+                        if (currentSpot + 2 < width * height * 3){
+                            numbersArray[currentSpot] = copiedValues[counter2];
+                            numbersArray[currentSpot + 1] = copiedValues[counter2 + 1];
+                            numbersArray[currentSpot + 2] = copiedValues[counter2 + 2];
+                            counter2 +=3; 
+                        }
+                    }
+                    while (column <= val){ // if column <= val means we cant paste anymore in bc its going to go out of bounds
+                        counter2 += 3;  // therefore discard the rest of the values in the row in copiedValues
+                        column++;
+                    }
+                    if ((startingXYPaste + (width * 3)) < (height * width * 3)){
+                        startingXYPaste = startingXYPaste + (width * 3);
+                    }
+                }
+        
+            }
+            
+            fprintf(write, "P3\n");
+            fprintf(write, "%lu %lu\n", width, height);
+            fprintf(write, "%d\n", 255);
+            for(unsigned long t = 0; t < counter; t+= 3){
+                fprintf(write, "%lu %lu %lu\n", numbersArray[t], numbersArray[t + 1], numbersArray[t + 2]);
+            }
+            fprintf(write, "\n");
+            fclose(write);
+            
+        }
+        else{
+            FILE *write = fopen(oname, "w");
+            char c;
+            while ((c = fgetc(read)) != EOF){
+                fputc(c, write);
+            } 
+            fclose(read);
+            fclose(write);
+        }
     }
     else{
         FILE *read = fopen(iname, "r");  // read from input file
@@ -222,7 +348,7 @@ int main(int argc, char **argv) {
             char lines[width * height + 1];  // temporary holder for values;
             unsigned long numbersArray[5 * width * height + 1];
             unsigned long counter = 0;
-            while (fgets(lines, sizeof(lines), read) != NULL){  // gets each line as a string and stores in the array lines
+            while (fgets(lines, sizeof(lines), read) != NULL){  // gets each line as a string and stores in the array lines (line 4, 5, 6, ... in PPM)
             // splits the line using strtok using " " and store each number in numbersArray by parsing it
                 char *portion = strtok(lines, " ");
                 while (portion != NULL){
@@ -237,7 +363,9 @@ int main(int argc, char **argv) {
             unsigned long uniqueColors[counter];
             unsigned long uniqueColorCounter = 0; // test if the colors are unique, if unique then add into the uniquecolor array
             for (unsigned long k = 0; k < counter; k+= 3){
-
+                if (numbersArray[k] == 999999999){
+                    k++;
+                }
                 int unique = 1;
                 for (unsigned long j = 0; j < uniqueColorCounter; j++){
                     if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
@@ -262,13 +390,16 @@ int main(int argc, char **argv) {
                 fprintf(write, "%lu ", uniqueColors[k]);
             }
 
-            fprintf(write, "%lu\n", uniqueColors[uniqueColorCounter * 3 - 1]);
+            fprintf(write, "%lu \n", uniqueColors[uniqueColorCounter * 3 - 1]);
 
             unsigned long colorEntries[counter]; 
             unsigned long index = 0;
-            for(unsigned long k = 0; k < counter; k+=3){  // gets rid of duplicates 
+            for(unsigned long k = 0; k < counter; k+=3){  
+                if (numbersArray[k] == 999999999){
+                    k++;
+                }
 
-                for (unsigned long j = 0; j < uniqueColorCounter; j++){
+                for (unsigned long j = 0; j < uniqueColorCounter; j++){ // assigns the colorIndex of each PPM RGB pair and stores it into colorEntries
                     if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
                         colorEntries[index++] = j; 
                         break;
@@ -290,7 +421,6 @@ int main(int argc, char **argv) {
                     else{
                         fprintf(write, "%lu ", colorEntries[k]);
                     }
-        
                 }
             }
 
@@ -368,5 +498,6 @@ int main(int argc, char **argv) {
 
         }  
     }
+    
     return 0;
 }
