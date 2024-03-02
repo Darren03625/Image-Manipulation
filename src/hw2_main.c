@@ -358,7 +358,7 @@ int main(int argc, char **argv) {
                 }
             }
 
-            if (cflag == 1 && pflag == 1){ 
+             if (cflag == 1 && pflag == 1){ 
                 // extract C arguments
                 unsigned long counter1 = 0;
                 unsigned long carguments[4];
@@ -511,11 +511,15 @@ int main(int argc, char **argv) {
 
             fgets(dimensions, sizeof(dimensions), read); // used to read the # unique colors (line 3)
 
+            fprintf(write, "P3\n");
+            fprintf(write, "%lu %lu\n", width, height);
+            fprintf(write, "%d\n", 255);
+
             char lines[15 * width * height + 1];
-            unsigned long colorsArray[width * height * 2 + 1]; // stores all the unique colors (line 4)
+            unsigned long colorsArray[width * height * 4 + 1]; // stores all the unique colors (line 4)
             unsigned long counter = 0; // size of colorsArray
 
-            fgets(lines, sizeof(lines), read); // used to read the unique color values and store in lines
+            fgets(lines, sizeof(lines), read); // used to read the unique color values and store in lines (line 4)
 
             char *portion = strtok(lines, " "); 
             while (portion != NULL){ // parses the unique color values and store it in colorsArray 
@@ -526,41 +530,149 @@ int main(int argc, char **argv) {
 
             fgets(lines, sizeof(lines), read); // used to read the line with color value inputs (line 5) 
 
-            fprintf(write, "P3\n");
-            fprintf(write, "%lu %lu\n", width, height);
-            fprintf(write, "%d\n", 255);
+            if (cflag == 1 && pflag == 1){
+                unsigned long numbersArray[width * height * 4 + 1];
+                unsigned long numCounter = 0;
+                portion = strtok(lines, " ");
+                while (portion != NULL){
+                    if (*portion == '*'){
+                        char *pointer = portion + 1;
+                        unsigned long consecutiveOccurrences = strtoul(pointer, NULL, 10);
 
-            portion = strtok(lines, " ");
-            while (portion != NULL){
-                if (*portion == '*'){ // encounters a *  for example *2 3 10 
-                    char *pointer = portion + 1;
-                    unsigned long consecutiveOccurrences = strtoul(pointer, NULL, 10); //extract value after the * which is 2
+                        portion = strtok(NULL, " ");
+                        unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
 
-                    portion = strtok(NULL, " "); //move the pointer forwards now we have 3
-                    
-                    unsigned long colorIndex = strtoul(portion, NULL, 10) * 3; // store this color index 3 which is spot 9 in the uniqueColorArray and take colorIndex+1 and colorIndex+2
-
-                    for (unsigned long k = 0; k < consecutiveOccurrences; k++){ //prints the 3 RGB values stored in the uniqueColorarray based on how the number after the *
-                        fprintf(write, "%lu %lu %lu", colorsArray[colorIndex], colorsArray[colorIndex + 1], colorsArray[colorIndex + 2]);
+                        for (unsigned long k = 0; k < consecutiveOccurrences; k++){
+                            numbersArray[numCounter] = colorsArray[colorIndex];
+                            numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+                            numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+                            numCounter += 3;
+                        }
                     }
+                    else{
+                        unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
 
-                    portion = strtok(NULL, " "); // move the pointer forwards to 10 now
+                        numbersArray[numCounter] = colorsArray[colorIndex];
+                        numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+                        numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+                        numCounter += 3;
+                    }
+                    portion = strtok(NULL, " ");
                 }
-                else {            // encounters a normal number like 8 *2 6 10
-                    unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;  // stores the color index 8 which is spot 24 in the uniqueColorArray take next 2 values as well
+                // extract C arguments
+                unsigned long counter1 = 0;
+                unsigned long carguments[4];
+                char *substring = strtok(cname, ",");
+                while (substring != NULL){
+                    carguments[counter1] = strtoul(substring, NULL, 10);
+                    counter1++;
+                    substring = strtok(NULL, ",");
+                }
 
-                    fprintf(write, "%lu %lu %lu", colorsArray[colorIndex], colorsArray[colorIndex+1], colorsArray[colorIndex+2]); // prints one time because no preceding * 
+                unsigned long startRow = carguments[0];
+                unsigned long startColumn = carguments[1];
+                unsigned long numColumns = carguments[2];
+                unsigned long numRows = carguments[3];
+                unsigned long sizeToCopy = carguments[2] * carguments[3] * 3;
 
-                    portion = strtok(NULL, " "); //moves the pointe forwards to *2 so the while loop can reevaluate
+
+                // extract P arguments
+                counter1 = 0;
+                unsigned long parguments[2];
+                substring = strtok(pname, ",");
+                while (substring != NULL){
+                    parguments[counter1] = strtoul(substring, NULL, 10);
+                    counter1++;
+                    substring = strtok(NULL, ",");
+                }
+
+                unsigned long startRowPaste = parguments[0];
+                unsigned long startColumnPaste = parguments[1];
+
+                unsigned long counter2 = 0;
+                unsigned long copiedValues[sizeToCopy];
+                unsigned long startingXY = (startRow * width * 3) + (startColumn * 3);
+                unsigned long val; // num elements to paste in the row
+                unsigned long val2; 
+                for(unsigned long row = 0; row < numRows && ((startRow + row) < height); row++){
+                    for(unsigned long column = 0; column < numColumns && ((startColumn + column) < width); column++){
+                        unsigned long currentSpot = startingXY + (column * 3);
+
+                        if (currentSpot + 2 < width * height * 3 && ((startColumn + column) < width) && ((startRow + row) < height)){
+                            copiedValues[counter2++] = numbersArray[currentSpot];
+                            copiedValues[counter2++] = numbersArray[currentSpot + 1];
+                            copiedValues[counter2++] = numbersArray[currentSpot + 2];
+                        }
+                        if (row == 0){
+                            val = column;
+                        }
+                    }
+                    if ((startingXY + (width * 3 )) < (height * width * 3)){
+                        startingXY = startingXY + (width * 3);
+                    }
+                    val2 = row;
+                }
+
+              
+                counter2 = 0;
+                unsigned long column;
+                unsigned long startingXYPaste = (startRowPaste * width * 3) + (startColumnPaste * 3);
+                for(unsigned long row = 0; row <= val2 && ((startRowPaste + row) < height); row++){
+                    for(column = 0; column <= val && ((startColumnPaste + column) < width); column++){
+                        unsigned long currentSpot = startingXYPaste + (column * 3);
+
+                        if (currentSpot + 2 < width * height * 3){
+                            numbersArray[currentSpot] = copiedValues[counter2];
+                            numbersArray[currentSpot + 1] = copiedValues[counter2 + 1];
+                            numbersArray[currentSpot + 2] = copiedValues[counter2 + 2];
+                            counter2 +=3; 
+                        }
+                    }
+                    while (column <= val){ // if column <= val means we cant paste anymore in bc its going to go out of bounds
+                        counter2 += 3;  // therefore discard the rest of the values in the row in copiedValues
+                        column++;
+                    }
+                    if ((startingXYPaste + (width * 3)) < (height * width * 3)){
+                        startingXYPaste = startingXYPaste + (width * 3);
+                    }
+                }
+              
+                for (unsigned long k = 0; k < numCounter; k+=3){
+                    fprintf(write, "%lu %lu %lu\n", numbersArray[k], numbersArray[k + 1], numbersArray[k + 2]);
+                }
+                
+            }
+            else{
+                portion = strtok(lines, " ");
+                while (portion != NULL){
+                    if (*portion == '*'){ // encounters a *  for example *2 3 10 
+                        char *pointer = portion + 1;
+                        unsigned long consecutiveOccurrences = strtoul(pointer, NULL, 10); //extract value after the * which is 2
+
+                        portion = strtok(NULL, " "); //move the pointer forwards now we have 3
+                        
+                        unsigned long colorIndex = strtoul(portion, NULL, 10) * 3; // store this color index 3 which is spot 9 in the uniqueColorArray and take colorIndex+1 and colorIndex+2
+
+                        for (unsigned long k = 0; k < consecutiveOccurrences; k++){ //prints the 3 RGB values stored in the uniqueColorarray based on how the number after the *
+                            fprintf(write, "%lu %lu %lu\n", colorsArray[colorIndex], colorsArray[colorIndex + 1], colorsArray[colorIndex + 2]);
+                        }
+
+                        portion = strtok(NULL, " "); // move the pointer forwards to 10 now
+                    }
+                    else {            // encounters a normal number like 8 *2 6 10
+                        unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;  // stores the color index 8 which is spot 24 in the uniqueColorArray take next 2 values as well
+
+                        fprintf(write, "%lu %lu %lu\n", colorsArray[colorIndex], colorsArray[colorIndex+1], colorsArray[colorIndex+2]); // prints one time because no preceding * 
+
+                        portion = strtok(NULL, " "); //moves the pointe forwards to *2 so the while loop can reevaluate
+                    }
                 }
             }
-            
             fprintf(write, "\n");
         
             fclose(write);
             fclose(read);
-
-        }  
+        }
     }
     
     return 0;
