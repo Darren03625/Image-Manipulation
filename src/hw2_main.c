@@ -320,13 +320,208 @@ int main(int argc, char **argv) {
         }
         else{
             FILE *write = fopen(oname, "w");
-            char c;
-            while ((c = fgetc(read)) != EOF){
-                fputc(c, write);
-            } 
-            fclose(read);
+            char dimensions[100];
+            fgets(dimensions, sizeof(dimensions), read);  // used to skip the SBU header (line 1)
+            fgets(dimensions, sizeof(dimensions), read);  // used to read dimensions (line 2)
+            
+            unsigned long width = strtoul(strtok(dimensions," "), NULL, 10);  // splits the string dimension by " ", extracts width
+            unsigned long height = strtoul(strtok(NULL, " "), NULL, 10);  // splits the string dimension by " ", extracts height
+
+            fgets(dimensions, sizeof(dimensions), read); // used to read the # unique colors (line 3)
+
+            unsigned long numUniqueColors = strtoul(strtok(dimensions, " "), NULL, 10);
+            
+            fprintf(write, "SBU\n");
+            fprintf(write, "%lu %lu\n", width, height);
+
+            if (cflag == 1 && pflag == 1){
+                char lines[15 * width * height + 1];
+                unsigned long colorsArray[width * height * 4 + 1]; // stores all the unique colors (line 4)
+                unsigned long counter = 0; // size of colorsArray
+
+                fgets(lines, sizeof(lines), read); // used to read the unique color values and store in lines (line 4)
+
+                char *portion = strtok(lines, " "); 
+                while (portion != NULL){ // parses the unique color values and store it in colorsArray 
+                    colorsArray[counter] = strtoul(portion, NULL, 10);
+                    counter++;
+                    portion = strtok(NULL, " ");
+                }
+
+                fgets(lines, sizeof(lines), read); // used to read the line with color value inputs (line 5) 
+
+                unsigned long numbersArray[width * height * 4 + 1];
+                unsigned long numCounter = 0;
+                portion = strtok(lines, " ");
+                while (portion != NULL){
+                    if (*portion == '*'){
+                        char *pointer = portion + 1;
+                        unsigned long consecutiveOccurrences = strtoul(pointer, NULL, 10);
+
+                        portion = strtok(NULL, " ");
+                        unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
+
+                        for (unsigned long k = 0; k < consecutiveOccurrences; k++){
+                            numbersArray[numCounter] = colorsArray[colorIndex];
+                            numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+                            numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+                            numCounter += 3;
+                        }
+                    }
+                    else{
+                        unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
+
+                        numbersArray[numCounter] = colorsArray[colorIndex];
+                        numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+                        numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+                        numCounter += 3;
+                    }
+                    portion = strtok(NULL, " ");
+                }
+
+                // extract C arguments
+                unsigned long counter1 = 0;
+                unsigned long carguments[4];
+                char *substring = strtok(cname, ",");
+                while (substring != NULL){
+                    carguments[counter1] = strtoul(substring, NULL, 10);
+                    counter1++;
+                    substring = strtok(NULL, ",");
+                }
+
+                unsigned long startRow = carguments[0];
+                unsigned long startColumn = carguments[1];
+                unsigned long numColumns = carguments[2];
+                unsigned long numRows = carguments[3];
+                unsigned long sizeToCopy = carguments[2] * carguments[3] * 3;
+
+
+                // extract P arguments
+                counter1 = 0;
+                unsigned long parguments[2];
+                substring = strtok(pname, ",");
+                while (substring != NULL){
+                    parguments[counter1] = strtoul(substring, NULL, 10);
+                    counter1++;
+                    substring = strtok(NULL, ",");
+                }
+
+                unsigned long startRowPaste = parguments[0];
+                unsigned long startColumnPaste = parguments[1];
+
+                unsigned long counter2 = 0;
+                unsigned long copiedValues[sizeToCopy];
+                unsigned long startingXY = (startRow * width * 3) + (startColumn * 3);
+                unsigned long val; // num elements to paste in the row
+                unsigned long val2; 
+                for(unsigned long row = 0; row < numRows && ((startRow + row) < height); row++){
+                    for(unsigned long column = 0; column < numColumns && ((startColumn + column) < width); column++){
+                        unsigned long currentSpot = startingXY + (column * 3);
+
+                        if (currentSpot + 2 < width * height * 3 && ((startColumn + column) < width) && ((startRow + row) < height)){
+                            copiedValues[counter2++] = numbersArray[currentSpot];
+                            copiedValues[counter2++] = numbersArray[currentSpot + 1];
+                            copiedValues[counter2++] = numbersArray[currentSpot + 2];
+                        }
+                        if (row == 0){
+                            val = column;
+                        }
+                    }
+                    if ((startingXY + (width * 3 )) < (height * width * 3)){
+                        startingXY = startingXY + (width * 3);
+                    }
+                    val2 = row;
+                }
+
+                
+                counter2 = 0;
+                unsigned long column;
+                unsigned long startingXYPaste = (startRowPaste * width * 3) + (startColumnPaste * 3);
+                for(unsigned long row = 0; row <= val2 && ((startRowPaste + row) < height); row++){
+                    for(column = 0; column <= val && ((startColumnPaste + column) < width); column++){
+                        unsigned long currentSpot = startingXYPaste + (column * 3);
+
+                        if (currentSpot + 2 < width * height * 3){
+                            numbersArray[currentSpot] = copiedValues[counter2];
+                            numbersArray[currentSpot + 1] = copiedValues[counter2 + 1];
+                            numbersArray[currentSpot + 2] = copiedValues[counter2 + 2];
+                            counter2 +=3; 
+                        }
+                    }
+                    while (column <= val){ // if column <= val means we cant paste anymore in bc its going to go out of bounds
+                        counter2 += 3;  // therefore discard the rest of the values in the row in copiedValues
+                        column++;
+                    }
+                    if ((startingXYPaste + (width * 3)) < (height * width * 3)){
+                        startingXYPaste = startingXYPaste + (width * 3);
+                    }
+                }
+                unsigned long uniqueColors[numCounter];
+                unsigned long uniqueColorCounter = 0; // test if the colors are unique, if unique then add into the uniquecolor array
+                for (unsigned long k = 0; k < numCounter; k+= 3){
+                    int unique = 1;
+                    for (unsigned long j = 0; j < uniqueColorCounter; j++){
+                        if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
+                            unique = 0;
+                            break;
+                        } 
+                    }
+
+                    if (unique == 1){
+                        uniqueColors[uniqueColorCounter * 3] = numbersArray[k];
+                        uniqueColors[uniqueColorCounter * 3 + 1] = numbersArray[k + 1];
+                        uniqueColors[uniqueColorCounter * 3 + 2] = numbersArray[k + 2];
+                        uniqueColorCounter++;
+                    }
+                }
+
+                fprintf(write, "%lu\n", uniqueColorCounter); // writes # unique colors to file             
+                    
+                for (unsigned long k = 0; k < uniqueColorCounter * 3 - 1; k++){ // writes all the color codes of unique colors
+                    fprintf(write, "%lu ", uniqueColors[k]);
+                }
+
+                fprintf(write, "%lu \n", uniqueColors[uniqueColorCounter * 3 - 1]);
+
+                unsigned long colorEntries[numCounter]; 
+                unsigned long index = 0;
+                for(unsigned long k = 0; k < numCounter; k+=3){  
+                    for (unsigned long j = 0; j < uniqueColorCounter; j++){ // assigns the colorIndex of each PPM RGB pair and stores it into colorEntries
+                        if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
+                            colorEntries[index++] = j; 
+                            break;
+                        }
+                    }
+                }
+
+                
+                numCounter = 1;
+                for (unsigned long k = 0; k < index; k++){
+                    if (k < index - 1 && colorEntries[k] == colorEntries[k+1]){
+                        numCounter++;
+                    }
+                    else{
+                        if (numCounter > 1){
+                            fprintf(write, "*%lu %lu ", numCounter, colorEntries[k]);
+                            numCounter = 1;
+                        }
+                        else{
+                            fprintf(write, "%lu ", colorEntries[k]);
+                        }
+                    }
+                }
+
+                }
+            else{
+                fprintf(write, "%lu\n", numUniqueColors);
+                char c;
+                while ((c = fgetc(read)) != EOF){
+                    fputc(c, write);
+                } 
+            }
             fclose(write);
         }
+        fclose(read);
     }
     else{
         FILE *read = fopen(iname, "r");  // read from input file
@@ -478,7 +673,6 @@ int main(int argc, char **argv) {
                 }
             }
 
-            
             counter = 1;
             for (unsigned long k = 0; k < index; k++){
                 if (k < index - 1 && colorEntries[k] == colorEntries[k+1]){
