@@ -115,11 +115,12 @@ int main(int argc, char **argv) {
     if (cname != NULL){
         int counter = 0;
         char cnamecopy[strlen(cname) + 1];
+        cnamecopy[strlen(cname)] = '\0';
         strncpy(cnamecopy, cname, strlen(cname));
         char *substring = strtok(cnamecopy, ",");
 
         while (substring != NULL){
-            if (strtol(substring, NULL, 10) > 0){
+            if (strtoul(substring, NULL, 10) > 0){
                 counter++;
             }
             substring = strtok(NULL, ",");
@@ -131,16 +132,17 @@ int main(int argc, char **argv) {
 
     if (pname != NULL){
         int counter = 0;
-
+        
         char pnamecopy[strlen(pname) + 1];
         strncpy(pnamecopy, pname, strlen(pname));
+        pnamecopy[strlen(pname)] = '\0';
         char *substring = strtok(pnamecopy, ",");
 
         while (substring != NULL){
             counter++;
             substring = strtok(NULL, ",");
         }
-
+        printf("%d ", counter);
         if (counter != 2){
         return P_ARGUMENT_INVALID;
         }
