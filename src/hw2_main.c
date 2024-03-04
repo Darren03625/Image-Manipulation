@@ -100,7 +100,7 @@ void rPrint(unsigned long numbersArray[], char *rname, unsigned long width, unsi
     // extracts string to be printed
     char *section = strtok(rname, ",\"");
     char *str = section;
-
+    
     // converts string to uppercase
     char strUpper[strlen(str) + 1];
     unsigned long strLength = 0;
@@ -116,22 +116,27 @@ void rPrint(unsigned long numbersArray[], char *rname, unsigned long width, unsi
     }
 
     char *text = strUpper;
+    printf("\n String To Print: %s", text);
 
     // extracts font file path
     section = strtok(NULL, ", \"");
     char *fontFilePath = section;
+    printf("\n Font File Path: %s", fontFilePath);
 
     // extracts font size
     section = strtok(NULL, ",");
     unsigned long fontSize = strtoul(section, NULL, 10);
+    printf("\n Font Size: %lu", fontSize);
 
     // extracts starting row to be printed
     section = strtok(NULL, ",");
     unsigned long startRowTextPaste = strtoul(section, NULL, 10);
+    printf("\n Start Row Text Paste: %lu", startRowTextPaste);
 
     // extracts strating column to be printed
     section = strtok(NULL, ",");
     unsigned long startColumnTextPaste = strtoul(section, NULL, 10);
+    printf("\n Start Column Text Paste: %lu", startRowTextPaste);
 
     FILE *fontRead = fopen(fontFilePath, "r"); // CHANGE THIS TO FONTFILEPATH WHEN YOU ARE SUBMITTING **************************8
     
@@ -439,9 +444,12 @@ int main(int argc, char **argv) {
     if (iflag == 0 || oflag == 0){
         return MISSING_ARGUMENT;
     }
+    printf("Before");
     if (unrecognizedflag == 1){
         return UNRECOGNIZED_ARGUMENT;
     }
+
+    printf("After");
     if (iflag > 1 || oflag > 1 || cflag > 1 || pflag > 1 || rflag > 1){
         return DUPLICATE_ARGUMENT;
     }
@@ -559,78 +567,534 @@ int main(int argc, char **argv) {
     strncpy(filetype2, p, 3);
     filetype2[3] = '\0';
 
-    if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "ppm") == 0){
-            FILE *read = fopen(iname, "r");
-            FILE *write = fopen(oname, "w");
-            if ((cflag == 0 && pflag == 0) && rflag == 0){
-                char c;
-                while ((c = fgetc(read)) != EOF){
-                fputc(c, write);
+    printf("\nFiletype1: %s \n", filetype1);
+    printf("Filetype2: %s\n", filetype2);
+
+    if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "ppm") == 0){ // PPM to PPM
+        FILE *read = fopen(iname, "r");
+        FILE *write = fopen(oname, "w");
+        if ((cflag == 0 && pflag == 0) && rflag == 0){ // No operations
+            char c;
+            while ((c = fgetc(read)) != EOF){
+            fputc(c, write);
+            }
+        }
+        else{ 
+            char dimensions[100];
+            dimensions[99] = '\0';
+
+            fgets(dimensions, sizeof(dimensions), read);  // Reads PPM (line 1)
+            fgets(dimensions, sizeof(dimensions), read);  // Reads Dimensions (line 2)
+
+            unsigned long width;
+            unsigned long height;
+            unsigned long testCounter = 0;
+            char *testPortion = strtok(dimensions, " ");
+            while (testPortion != NULL){
+                if (testCounter == 0){
+                    width = strtoul(testPortion, NULL, 10);
+                }
+                if (testCounter == 1){
+                    height = strtoul(testPortion, NULL, 10);
+                }
+                testCounter++;
+                testPortion = strtok(NULL, " ");
+            }
+
+
+            fgets(dimensions, sizeof(dimensions), read); // Reads in 255 (line 3)
+
+            char lines[width * height * 5 + 1]; // Temporary holder
+            unsigned long numbersArray[width * height * 5 + 1]; // RGB values
+            unsigned long counter = 0;
+
+            while (fgets(lines, sizeof(lines), read) != NULL){ 
+                char *portion = strtok(lines, " ");
+                while (portion != NULL){
+                    if (portion[0] != '\n'){
+                        numbersArray[counter] = strtoul(portion, NULL, 10);
+                        counter++;
+                    }
+                    portion = strtok(NULL, " ");
+                }
+            }
+
+            if (cflag == 1 && pflag == 1){
+                copyAndPastePixels(width, height, numbersArray, cname, pname);
+            }
+
+            if (rflag == 1){
+                printf("\n%s ", rname);
+                rPrint(numbersArray, rname, width, height);
+            }
+
+            // Writing to PPM file
+            fprintf(write, "P3\n");
+            fprintf(write, "%lu %lu\n", width, height);
+            fprintf(write, "%d\n", 255);
+            for(unsigned long t = 0; t < counter; t+= 3){
+                fprintf(write, "%lu %lu %lu\n", numbersArray[t], numbersArray[t + 1], numbersArray[t + 2]);
+            }
+            fprintf(write, "\n");
+        }
+
+        fclose(write);
+        fclose(read);
+    }
+    else if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "sbu") == 0){ // PPM to SBU
+
+        FILE *read = fopen(iname, "r");
+        FILE *write = fopen(oname, "w");
+
+        char dimensions[100];
+        dimensions[99] = '\0';
+
+        fgets(dimensions, sizeof(dimensions), read);  // Reads PPM (line 1)
+        fgets(dimensions, sizeof(dimensions), read);  // Reads dimensions (line 2)
+
+        unsigned long width;
+        unsigned long height;
+        unsigned long testCounter = 0;
+        char *testPortion = strtok(dimensions, " ");
+        while (testPortion != NULL){
+            if (testCounter == 0){
+                width = strtoul(testPortion, NULL, 10);
+            }
+            if (testCounter == 1){
+                height = strtoul(testPortion, NULL, 10);
+            }
+            testCounter++;
+            testPortion = strtok(NULL, " ");
+        }
+
+
+        fgets(dimensions, sizeof(dimensions), read); // Reads in 255 (line 3)
+
+        char lines[width * height * 5 + 1]; // Temporary holder
+        unsigned long numbersArray[width * height * 5 + 1]; // RGB values
+        unsigned long counter = 0;
+
+        while (fgets(lines, sizeof(lines), read) != NULL){   // Extracts RGB values (line 4)
+            char *portion = strtok(lines, " ");
+            while (portion != NULL){
+                if (portion[0] != '\n'){
+                    numbersArray[counter] = strtoul(portion, NULL, 10);
+                    counter++;
+                }
+                portion = strtok(NULL, " ");
+            }
+        }
+
+        if (cflag == 1 && pflag == 1){
+            copyAndPastePixels(width, height, numbersArray, cname, pname);
+        }
+
+        if (rflag == 1){
+            printf("\n%s ", rname);
+            rPrint(numbersArray, rname, width, height);
+        }
+
+        // Finds all the unique colors
+        unsigned long uniqueColors[counter];
+        unsigned long uniqueColorCounter = 0 ; 
+        for (unsigned long k = 0; k < counter; k+= 3){
+            int unique = 1;
+            for (unsigned long j = 0; j < uniqueColorCounter; j++){
+                if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
+                    unique = 0;
+                    break;
+                } 
+            }
+
+            if (unique == 1){
+                uniqueColors[uniqueColorCounter * 3] = numbersArray[k];
+                uniqueColors[uniqueColorCounter * 3 + 1] = numbersArray[k + 1];
+                uniqueColors[uniqueColorCounter * 3 + 2] = numbersArray[k + 2];
+                uniqueColorCounter++;
+            }
+        }
+        
+        // Writing to SBU file
+        fputs("SBU\n", write);                      // line 1                                   
+        fprintf(write, "%lu %lu\n", width, height); // line 2  
+        fprintf(write, "%lu\n", uniqueColorCounter);// line 3
+        
+        // Writes the Unique Colors (line 4)
+        for (unsigned long k = 0; k < uniqueColorCounter * 3 - 1; k++){ 
+            fprintf(write, "%lu ", uniqueColors[k]);
+        }
+        fprintf(write, "%lu \n", uniqueColors[uniqueColorCounter * 3 - 1]);
+
+        // Matches RGB values to its color index
+        unsigned long colorEntries[counter]; 
+        unsigned long index = 0;
+        for(unsigned long k = 0; k < counter; k+=3){  
+            for (unsigned long j = 0; j < uniqueColorCounter; j++){ // assigns the colorIndex of each PPM RGB pair and stores it into colorEntries
+                if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
+                    colorEntries[index++] = j; 
+                    break;
+                }
+            }
+        }
+
+        // Checks for duplicate color index and packages it into *n colorIndex format
+        counter = 1;
+        for (unsigned long k = 0; k < index; k++){
+            if (k < index - 1 && colorEntries[k] == colorEntries[k+1]){
+                counter++;
+            }
+            else{
+                if (counter > 1){
+                    fprintf(write, "*%lu %lu ", counter, colorEntries[k]);
+                    counter = 1;
+                }
+                else{
+                    fprintf(write, "%lu ", colorEntries[k]);
+                }
+            }
+        }
+        fclose(read);
+        fclose(write);
+    }
+    else if (strcmp(filetype1, "sbu") == 0 && strcmp(filetype2, "sbu") == 0){ // SBU to SBU
+        FILE *read = fopen(iname, "r");
+        FILE *write = fopen(oname, "w");
+        if ((cflag == 0 && pflag == 0) && rflag == 0){
+            char c;
+            while ((c = fgetc(read)) != EOF){
+            fputc(c, write);
+            }
+        }
+        else{
+            char dimensions[100];
+            fgets(dimensions, sizeof(dimensions), read);  // Reads in SBU (line 1)
+            fgets(dimensions, sizeof(dimensions), read);  // Reads in dimensions (line 2)
+
+            unsigned long width;
+            unsigned long height;
+            unsigned long testCounter = 0;
+            char *testPortion = strtok(dimensions, " ");
+            while (testPortion != NULL){
+                if (testCounter == 0){
+                    width = strtoul(testPortion, NULL, 10);
+                }
+                if (testCounter == 1){
+                    height = strtoul(testPortion, NULL, 10);
+                }
+                testCounter++;
+                testPortion = strtok(NULL, " ");
+            }
+
+            fgets(dimensions, sizeof(dimensions), read); // Reads in Unique Color Counter (line 3)
+
+            char lines[15 * width * height + 1];
+            unsigned long colorsArray[width * height * 4 + 1]; // Array to store all Unique Colors
+            unsigned long counter = 0; // Size of colorsArray
+
+            fgets(lines, sizeof(lines), read); // Reads in all Unique Colors (line 4)
+
+            char *portion = strtok(lines, " "); 
+            while (portion != NULL){
+                colorsArray[counter] = strtoul(portion, NULL, 10);
+                counter++;
+                portion = strtok(NULL, " ");
+            }
+
+            fgets(lines, sizeof(lines), read); // Reads in RGB values (line 5) 
+
+            unsigned long numbersArray[width * height * 4 + 1]; // Array to store RGB values
+            unsigned long numCounter = 0; // Size of numbersArray
+
+            // Extracts RGB values, Unpackages them, and Store in numbersArray
+            // Example: *3 2 --> Finds the 3 RGB values associated at color index 2
+            // --> Stores 3 copies of the RGB values at color index in numbersArray
+            portion = strtok(lines, " ");
+            while (portion != NULL){
+                if (*portion == '*'){
+                    char *pointer = portion + 1;
+                    unsigned long consecutiveOccurrences = strtoul(pointer, NULL, 10);
+
+                    portion = strtok(NULL, " ");
+                    unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
+
+                    for (unsigned long k = 0; k < consecutiveOccurrences; k++){
+                        numbersArray[numCounter] = colorsArray[colorIndex];
+                        numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+                        numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+                        numCounter += 3;
+                    }
+                }
+                else{
+                    unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
+
+                    numbersArray[numCounter] = colorsArray[colorIndex];
+                    numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+                    numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+                    numCounter += 3;
+                }
+                portion = strtok(NULL, " ");
+            }
+
+            // Runs copy and paste
+            if (cflag == 1 && pflag == 1){
+                copyAndPastePixels(width, height, numbersArray, cname, pname);
+            }
+            // Runs printing
+            if (rflag == 1){
+                rPrint(numbersArray, rname, width, height);
+            }
+
+            // Since the RGB values were modified, you need to recalculate all the Unique Colors
+            // Refinds all the Unique Colors.
+            unsigned long uniqueColors[numCounter];
+            unsigned long uniqueColorCounter = 0; 
+            for (unsigned long k = 0; k < numCounter; k+= 3){
+                int unique = 1;
+                for (unsigned long j = 0; j < uniqueColorCounter; j++){
+                    if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
+                        unique = 0;
+                        break;
+                    } 
+                }
+
+                if (unique == 1){
+                    uniqueColors[uniqueColorCounter * 3] = numbersArray[k];
+                    uniqueColors[uniqueColorCounter * 3 + 1] = numbersArray[k + 1];
+                    uniqueColors[uniqueColorCounter * 3 + 2] = numbersArray[k + 2];
+                    uniqueColorCounter++;
+                }
+            }
+
+            // Writing to SBU file
+            fprintf(write, "SBU\n");                     // line 1
+            fprintf(write, "%lu %lu\n", width, height);  // line 2
+            fprintf(write, "%lu\n", uniqueColorCounter); // line 3
+                
+            for (unsigned long k = 0; k < uniqueColorCounter * 3 - 1; k++){
+                fprintf(write, "%lu ", uniqueColors[k]);
+            }
+            fprintf(write, "%lu \n", uniqueColors[uniqueColorCounter * 3 - 1]);
+
+            // Rematches RGB values to its color index
+            unsigned long colorEntries[numCounter]; 
+            unsigned long index = 0;
+            for(unsigned long k = 0; k < numCounter; k+=3){  
+                for (unsigned long j = 0; j < uniqueColorCounter; j++){ // assigns the colorIndex of each PPM RGB pair and stores it into colorEntries
+                    if (uniqueColors[j * 3] == numbersArray[k] && uniqueColors[j * 3 + 1] == numbersArray[k+1] && uniqueColors[j * 3 + 2] == numbersArray[k+2]){
+                        colorEntries[index++] = j; 
+                        break;
+                    }
+                }
+            }
+            
+            // Checks for duplicate color index and packages it into *n colorIndex format
+            numCounter = 1;
+            for (unsigned long k = 0; k < index; k++){
+                if (k < index - 1 && colorEntries[k] == colorEntries[k+1]){
+                    numCounter++;
+                }
+                else{
+                    if (numCounter > 1){
+                        fprintf(write, "*%lu %lu ", numCounter, colorEntries[k]);
+                        numCounter = 1;
+                    }
+                    else{
+                        fprintf(write, "%lu ", colorEntries[k]);
+                    }
+                }
+            }
+        }
+        fclose(read);
+        fclose(write);
+    }
+    else { // SBU to PPM
+        FILE *read = fopen(iname, "r");
+        FILE *write = fopen(oname, "w");   
+        char dimensions[100];
+        fgets(dimensions, sizeof(dimensions), read);  // Reads in SBU (line 1)
+        fgets(dimensions, sizeof(dimensions), read);  // Reads in dimensions (line 2)
+
+        unsigned long width;
+        unsigned long height;
+        unsigned long testCounter = 0;
+        char *testPortion = strtok(dimensions, " ");
+        while (testPortion != NULL){
+            if (testCounter == 0){
+                width = strtoul(testPortion, NULL, 10);
+            }
+            if (testCounter == 1){
+                height = strtoul(testPortion, NULL, 10);
+            }
+            testCounter++;
+            testPortion = strtok(NULL, " ");
+        }
+
+        fgets(dimensions, sizeof(dimensions), read); // Reads in Unique Color Counter (line 3)
+
+        char lines[15 * width * height + 1];
+        unsigned long colorsArray[width * height * 4 + 1]; // Array to store all Unique Colors
+        unsigned long counter = 0; // Size of colorsArray
+
+        fgets(lines, sizeof(lines), read); // Reads in all Unique Colors (line 4)
+
+        char *portion = strtok(lines, " "); 
+        while (portion != NULL){
+            colorsArray[counter] = strtoul(portion, NULL, 10);
+            counter++;
+            portion = strtok(NULL, " ");
+        }
+
+        fgets(lines, sizeof(lines), read); // Reads in RGB values (line 5) 
+
+        unsigned long numbersArray[width * height * 4 + 1]; // Array to store RGB values
+        unsigned long numCounter = 0; // Size of numbersArray
+
+        // Extracts RGB values, Unpackages them, and Store in numbersArray
+        // Example: *3 2 --> Finds the 3 RGB values associated at color index 2
+        // --> Stores 3 copies of the RGB values at color index in numbersArray
+        portion = strtok(lines, " ");
+        while (portion != NULL){
+            if (*portion == '*'){
+                char *pointer = portion + 1;
+                unsigned long consecutiveOccurrences = strtoul(pointer, NULL, 10);
+
+                portion = strtok(NULL, " ");
+                unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
+
+                for (unsigned long k = 0; k < consecutiveOccurrences; k++){
+                    numbersArray[numCounter] = colorsArray[colorIndex];
+                    numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+                    numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+                    numCounter += 3;
                 }
             }
             else{
-                char dimensions[100];
-                dimensions[99] = '\0';
+                unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
 
-                fgets(dimensions, sizeof(dimensions), read);  // Reads PPM (line 1)
-                fgets(dimensions, sizeof(dimensions), read);  // Reads dimensions (line 2)
-
-                unsigned long width;
-                unsigned long height;
-                unsigned long testCounter = 0;
-                char *testPortion = strtok(dimensions, " ");
-                while (testPortion != NULL){
-                    if (testCounter == 0){
-                        width = strtoul(testPortion, NULL, 10);
-                    }
-                    if (testCounter == 1){
-                        height = strtoul(testPortion, NULL, 10);
-                    }
-                    testCounter++;
-                    testPortion = strtok(NULL, " ");
-                }
-
-
-                fgets(dimensions, sizeof(dimensions), read); // Reads in 255 (line 3)
-
-                char lines[width * height * 5 + 1]; // Temporary holder
-                unsigned long numbersArray[width * height * 5 + 1]; // RGB values
-                unsigned long counter = 0;
-
-                while (fgets(lines, sizeof(lines), read) != NULL){ 
-                    char *portion = strtok(lines, " ");
-                    while (portion != NULL){
-                        if (portion[0] != '\n'){
-                            numbersArray[counter] = strtoul(portion, NULL, 10);
-                            counter++;
-                        }
-                        portion = strtok(NULL, " ");
-                    }
-                }
-
-                if (cflag == 1 && pflag == 1){
-                    copyAndPastePixels(width, height, numbersArray, cname, pname);
-                }
-
-                if (rflag == 1){
-                    rPrint(numbersArray, rname, width, height);
-                }
-
-                fprintf(write, "P3\n");
-                fprintf(write, "%lu %lu\n", width, height);
-                fprintf(write, "%d\n", 255);
-                for(unsigned long t = 0; t < counter; t+= 3){
-                    fprintf(write, "%lu %lu %lu\n", numbersArray[t], numbersArray[t + 1], numbersArray[t + 2]);
-                }
-                fprintf(write, "\n");
+                numbersArray[numCounter] = colorsArray[colorIndex];
+                numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+                numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+                numCounter += 3;
             }
-
-            fclose(write);
-            fclose(read);
+            portion = strtok(NULL, " ");
         }
 
-    //
-    // if (strcmp(filetype1, filetype2) == 0){
+        // Runs copy and paste
+        if (cflag == 1 && pflag == 1){
+            copyAndPastePixels(width, height, numbersArray, cname, pname);
+        }
+        // Runs printing
+        if (rflag == 1){
+            rPrint(numbersArray, rname, width, height);
+        }         
+        fprintf(write, "P3\n");
+        fprintf(write, "%lu %lu\n", width, height);
+        fprintf(write, "%d\n", 255);
+        for(unsigned long t = 0; t < numCounter; t+= 3){
+            fprintf(write, "%lu %lu %lu\n", numbersArray[t], numbersArray[t + 1], numbersArray[t + 2]);
+        }
+        fprintf(write, "\n");
+        // FILE *read = fopen(iname, "r");
+        // FILE *write = fopen(oname, "w");
+   
+        // printf("Inside");
+        // char dimensions[100];
+        // fgets(dimensions, sizeof(dimensions), read);  // Reads in SBU (line 1)
+        // fgets(dimensions, sizeof(dimensions), read);  // Reads in Dimensions (line 2)
+
+        // unsigned long width;
+        // unsigned long height;
+        // unsigned long testCounter = 0;
+        // char *testPortion = strtok(dimensions, " ");
+        // while (testPortion != NULL){
+        //     if (testCounter == 0){
+        //         width = strtoul(testPortion, NULL, 10);
+        //     }
+        //     if (testCounter == 1){
+        //         height = strtoul(testPortion, NULL, 10);
+        //     }
+        //     testCounter++;
+        //     testPortion = strtok(NULL, " ");
+        // }
+
+        
+        // fgets(dimensions, sizeof(dimensions), read); // Reads in Unique Color Counter (line 3)
+
+        // char lines[25 * width * height + 1];
+        // unsigned long colorsArray[width * height * 5 + 1]; // Array to store all Unique Colors
+        // unsigned long counter = 0; // Size of colorsArray
+
+        // fgets(lines, sizeof(lines), read); // Reads in all the Unique Colors (line 4)
+
+        // char *portion = strtok(lines, " "); 
+        // while (portion != NULL){ 
+        //     colorsArray[counter] = strtoul(portion, NULL, 10);
+        //     counter++;
+        //     portion = strtok(NULL, " ");
+        // }
+
+        // unsigned long numbersArray[width * height * 4 + 1]; // Array to store all RGB values
+        // unsigned long numCounter = 0; // Size of numbersArray
+        
+        // fgets(lines, sizeof(lines), read); // Reads in RGB values (line 5)
+
+        // portion = strtok(lines, " ");
+        // while (portion != NULL){
+        //     if (*portion == '*'){
+        //         char *pointer = portion + 1;
+        //         unsigned long consecutiveOccurrences = strtoul(pointer, NULL, 10);
+
+        //         portion = strtok(NULL, " ");
+        //         unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
+
+        //         for (unsigned long k = 0; k < consecutiveOccurrences; k++){
+        //             numbersArray[numCounter] = colorsArray[colorIndex];
+        //             numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+        //             numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+        //             numCounter += 3;
+        //         }
+        //     }
+        //     else{
+        //         unsigned long colorIndex = strtoul(portion, NULL, 10) * 3;
+
+        //         numbersArray[numCounter] = colorsArray[colorIndex];
+        //         numbersArray[numCounter + 1] = colorsArray[colorIndex + 1];
+        //         numbersArray[numCounter + 2] = colorsArray[colorIndex + 2];
+        //         numCounter += 3;
+        //     }
+        //     portion = strtok(NULL, " ");
+        // }
+
+        // printf("%d ", numbersArray[0]);
+        // printf("%d ", numbersArray[1]);
+        // printf("%d ", numbersArray[2]);
+
+        // printf("%d ", numbersArray[3]);
+        // printf("%d ", numbersArray[4]);
+        // printf("%d ", numbersArray[5]);
+
+        // // if (cflag == 1 && pflag == 1){
+        // //     copyAndPastePixels(width, height, numbersArray, cname, pname);
+        // // }
+        // // if (rflag == 1){
+        // //     rPrint(numbersArray, rname, width, height);
+        // // }
+        
+        // // Writing to PPM file
+        // fprintf(write, "P3\n");
+        // fprintf(write, "%lu %lu\n", width, height);
+        // fprintf(write, "%d\n", 255);
+        // for(unsigned long t = 0; t < counter; t+= 3){
+        //     fprintf(write, "%lu %lu %lu\n", numbersArray[t], numbersArray[t + 1], numbersArray[t + 2]);
+        // }
+        // fprintf(write, "\n");
+
+        // fclose(read);
+        // fclose(write);
+    }
+
+    
+    // if (strcmp(filetype1, filetype2) == 0){ 
     //     FILE *read = fopen(iname, "r");
     //     if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "ppm") == 0){ //ppm to ppm
     //         FILE *write = fopen(oname, "w");
@@ -745,8 +1209,7 @@ int main(int argc, char **argv) {
     //             fprintf(write, "%lu %lu %lu\n", numbersArray[t], numbersArray[t + 1], numbersArray[t + 2]);
     //         }
     //         fprintf(write, "\n");
-    //         fclose(write);
-            
+    //         fclose(write); 
     //     }
     //     else{
     //         FILE *write = fopen(oname, "w");
@@ -1121,8 +1584,19 @@ int main(int argc, char **argv) {
 
     //         fclose(write);
     //         fclose(read);
-
     //     }
+
+
+
+
+
+
+
+
+
+
+
+    
     //     else{ // this means we need to convert the input file from sbu to output ppm
     //         FILE *write = fopen(oname, "w");
 
