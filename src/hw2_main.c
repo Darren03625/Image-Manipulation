@@ -19,6 +19,359 @@
 #include <string.h>
 #include <unistd.h> 
 
+unsigned long endPoint(unsigned long MAXROWS, unsigned long MAXCOLUMNS, char letter, char fontValues[MAXROWS][MAXCOLUMNS], unsigned long fontNumber){
+    int numLetters = 0;
+    unsigned long endingPoint;
+    for (unsigned long i = 0; i < 1; i++){ // check the first row 
+        for(unsigned long j = 0; j < MAXCOLUMNS; j++){ // check all the values in the first row
+            unsigned long counter = 0;    
+            
+            if (numLetters == ((letter + 1) - 'A')){ // endPoint is the starting point of the next letter
+                endingPoint = j;
+                break;
+            }
+
+            if (fontValues[i][j] == ' '){   // check if the values are equal to space then check the values under it
+                counter++;
+                for (unsigned long k = 1; k < MAXROWS; k++){ // since i already checked the first row for space, check the rows after it
+                    if(fontValues[k][j] == ' ')
+                        counter++;
+                }
+            }
+            if (counter == MAXROWS){
+                numLetters++;
+            }
+        }
+    }
+    
+    if (fontNumber == 2 && letter == ('Z' + 1)){  // for font 2 
+        return MAXCOLUMNS - 1;
+    }
+    else if (fontNumber == 0 && letter == 'Z'){ // for fonts that have no issues font 1 and 4
+        return MAXCOLUMNS - 1;
+    }
+    else if (fontNumber == 3 && letter == ('Z' + 1)){
+        return MAXCOLUMNS - 1;
+    }
+    
+    return endingPoint - 1;
+}
+
+unsigned long startPoint(unsigned long MAXROWS, unsigned long MAXCOLUMNS, char letter, char fontValues[MAXROWS][MAXCOLUMNS], unsigned long fontNumber){
+    // numLetters 0 = 'A' numLetters 1 = 'B' .... numLetters 25 = 'Z' numLetters 26 = EOF
+    // what letter do I want? let say B
+    // I want letter B
+    // which is numLetters = 1
+    // if (counter == numLetters) move the pointer j number of times down
+    int numLetters = 0;
+    unsigned long startingPoint = -1;
+    for (unsigned long i = 0; i < 1; i++){ // check the first row 
+        for(unsigned long j = 0; j < MAXCOLUMNS; j++){ // check all the value sin the first row
+            unsigned long counter = 0;    
+
+            if (numLetters == (letter - 'A')){ // finds the starting point of the letter inputted in the font file
+                startingPoint = j;
+                break;
+            }
+
+            if (fontValues[i][j] == ' '){   // check if the values are equal to space then check the values under it
+                counter++;
+                for (unsigned long k = 1; k < MAXROWS; k++){ // since i already checked the first row for space, check the rows after it
+                    if(fontValues[k][j] == ' ')
+                        counter++;
+                }
+            }
+            if (counter == MAXROWS){
+                numLetters++;
+            }
+        }
+    }
+
+    if (fontNumber == 3 && letter == ('Z' + 1)){
+        startingPoint = 196;
+    }
+
+
+    return startingPoint;
+}
+
+void rPrint(unsigned long numbersArray[], char *rname, unsigned long width, unsigned long height){
+
+    // extracts string to be printed
+    char *section = strtok(rname, ",\"");
+    char *str = section;
+
+    // converts string to uppercase
+    char strUpper[strlen(str) + 1];
+    unsigned long strLength = 0;
+    strUpper[strlen(str)] = '\0';
+    
+    for (; *str != '\0'; str++){
+        if (*str >= 'a' && *str <= 'z'){
+            strUpper[strLength++] = *str - 'a' + 'A';
+        }
+        else{
+            strUpper[strLength++] = *str;
+        }
+    }
+
+    char *text = strUpper;
+
+    // extracts font file path
+    section = strtok(NULL, ", \"");
+    char *fontFilePath = section;
+
+    // extracts font size
+    section = strtok(NULL, ",");
+    unsigned long fontSize = strtoul(section, NULL, 10);
+
+    // extracts starting row to be printed
+    section = strtok(NULL, ",");
+    unsigned long startRowTextPaste = strtoul(section, NULL, 10);
+
+    // extracts strating column to be printed
+    section = strtok(NULL, ",");
+    unsigned long startColumnTextPaste = strtoul(section, NULL, 10);
+
+    FILE *fontRead = fopen(fontFilePath, "r"); // CHANGE THIS TO FONTFILEPATH WHEN YOU ARE SUBMITTING **************************8
+    
+
+    char tempHolder[1000];
+    unsigned long MAXROWS = 0;
+    unsigned long MAXCOLUMNS = 0;
+    int c;
+    while ((c = fgetc(fontRead)) != '\n'){ // extracts the maximum number of columns in the font file
+        MAXCOLUMNS++;
+    }
+    while (fgets(tempHolder, sizeof(tempHolder), fontRead) != NULL){ // extracts the maximum number of rows in the font file
+        MAXROWS++;
+    }
+    MAXROWS++;
+
+
+    fseek(fontRead, 0, SEEK_SET); // resets the file pointer to the beginning so we can extract data now
+    
+    char fontValues[MAXROWS][MAXCOLUMNS];
+
+    for (unsigned long i = 0; i < MAXROWS; i++){
+        fgets(tempHolder, sizeof(tempHolder), fontRead);
+        for (unsigned long j = 0; j < MAXCOLUMNS; j++){
+            fontValues[i][j] = tempHolder[j];
+        }
+    }
+
+    char copiedFontValues[MAXROWS][1000 * 10];
+    unsigned long lastPlaceToCopyTo = 0; // keeps track of where to concentate after adding characters in
+    unsigned long arraySize = 1;    // keeps track of num in sizeOfEachLetter
+    unsigned long sizeOfEachLetter[200];
+    sizeOfEachLetter[0] = 0;
+
+    while (*text != '\0'){
+        char letter = *text;
+
+        unsigned long startingPoint;
+        unsigned long endingPoint;
+        if (strcmp(fontFilePath, "./tests/fonts/font3.txt") == 0){ // font 3 we need to skip over the first column of white spaces
+            startingPoint = startPoint(MAXROWS, MAXCOLUMNS, letter + 1, fontValues, 3);
+            endingPoint = endPoint(MAXROWS, MAXCOLUMNS, letter + 1, fontValues, 3);
+        }
+        else if (strcmp(fontFilePath, "./tests/fonts/font2.txt") == 0 ){
+            if (letter >= 'R' && letter <= 'Z'){
+                startingPoint = startPoint(MAXROWS, MAXCOLUMNS, letter + 1, fontValues, 2);  // test for font 2 (double column between Q and R)
+                endingPoint = endPoint(MAXROWS, MAXCOLUMNS, letter+1, fontValues, 2);
+            }
+            else{
+                startingPoint = startPoint(MAXROWS, MAXCOLUMNS, letter, fontValues, 2);
+                endingPoint = endPoint(MAXROWS, MAXCOLUMNS, letter, fontValues, 2);
+            }
+        }
+        else{
+            startingPoint = startPoint(MAXROWS, MAXCOLUMNS, letter, fontValues, 0);  // font 1 and 4 
+            endingPoint = endPoint(MAXROWS, MAXCOLUMNS, letter, fontValues, 0);
+        }
+
+
+        char nextLetter = *(text + 1);
+    
+        if (letter == ' '){ // 
+            for (unsigned long i = 0; i < MAXROWS; i++) {
+                unsigned long copiedColumn = lastPlaceToCopyTo;
+                for (unsigned long j = 0; j < 5; j++) {
+                    copiedFontValues[i][copiedColumn++] = ' ';
+                }
+            }
+            lastPlaceToCopyTo += 5;
+            sizeOfEachLetter[arraySize++] = lastPlaceToCopyTo; 
+        }
+        else{
+            // copies over a letter and places it into copiedFontValues based on the offset from previous letters
+            for (unsigned long i = 0; i < MAXROWS; i++) {
+                unsigned long copiedColumn = lastPlaceToCopyTo;
+                for (unsigned long j = startingPoint; j < endingPoint ; j++) { // prints astertiks one time
+
+                    for (unsigned long k = 0; k < fontSize; k++){ // prints astertiks * fontSize times horizontally
+                        copiedFontValues[i][copiedColumn++] = fontValues[i][j];
+                    }
+                }
+                
+                for(unsigned long j = 0; j < 1; j++){
+                    copiedFontValues[i][copiedColumn++] = ' ';
+                }
+            }
+
+            // properly creates offset for the next letter so they dont get overwritten by each other
+            lastPlaceToCopyTo += (endingPoint - startingPoint) * (fontSize) + 1;
+
+            if (nextLetter != ' '){
+                sizeOfEachLetter[arraySize++] = lastPlaceToCopyTo - 1; 
+            }
+            else{
+                sizeOfEachLetter[arraySize++] = lastPlaceToCopyTo;
+            }
+        }
+        
+
+        text++;
+    }
+    // copiedFontValues horizontally expanded
+
+    char verticallyExpanded[MAXROWS * fontSize][1000 * 25 + 1000];
+    for (unsigned long i = 0; i < (MAXROWS * fontSize); i++){
+        int actualIValue = i/fontSize;
+        for(unsigned long j = 0; j < lastPlaceToCopyTo; j++){
+            verticallyExpanded[i][j] = copiedFontValues[actualIValue][j];
+        }
+    }
+
+
+    unsigned long size = MAXROWS * fontSize * lastPlaceToCopyTo;
+    char copiedValues[size + 1];
+    copiedValues[size] = '\0';
+
+    unsigned long index = 0;
+    for (unsigned long i = 0; i < MAXROWS * fontSize; i++){
+        for (unsigned long j = 0; j < lastPlaceToCopyTo; j++){
+            copiedValues[index++] = verticallyExpanded[i][j];
+        }
+    }
+
+    unsigned long differences[200];
+    unsigned long differencesSize = 0;
+    for(unsigned long i = 0; i < arraySize-1; i++){
+        differences[differencesSize++] = sizeOfEachLetter[i + 1] - sizeOfEachLetter[i];
+    }
+
+    unsigned long incrementer = lastPlaceToCopyTo;
+    lastPlaceToCopyTo--;
+    differencesSize--;
+    while ((lastPlaceToCopyTo + startColumnTextPaste) > width) {
+        lastPlaceToCopyTo -= differences[differencesSize];
+        differencesSize--;
+    }
+
+
+    unsigned long copiedValueCounter = 0;
+    unsigned long column;
+    unsigned long startingXYTextPaste = (startRowTextPaste * width * 3) + (startColumnTextPaste * 3);
+    for(unsigned long row = 0; row < (MAXROWS * fontSize) && ((startRowTextPaste + row) < height); row++){
+        for (column = 0; column < lastPlaceToCopyTo && ((startColumnTextPaste + column) < width ); column++){
+            unsigned long currentSpot = startingXYTextPaste + (column * 3);
+
+            if (currentSpot + 2 < width * height * 3){
+                if (copiedValues[copiedValueCounter] == '*'){
+                    numbersArray[currentSpot] = 255;
+                    numbersArray[currentSpot + 1] = 255;
+                    numbersArray[currentSpot + 2] = 255;
+                }
+                copiedValueCounter++;
+            }
+        }
+        while (column < incrementer){
+            copiedValueCounter++;
+            column++;
+        }
+        if ((startingXYTextPaste + (width * 3)) < (height * width * 3)){
+            startingXYTextPaste = startingXYTextPaste + (width * 3);
+        }
+    }
+
+    fclose(fontRead);
+}
+
+void copyAndPastePixels(unsigned long width, unsigned long height, unsigned long* numbersArray, char* cname, char* pname) {
+    unsigned long counter1 = 0;
+    unsigned long carguments[4];
+    char *substring = strtok(cname, ",");
+    while (substring != NULL){
+        carguments[counter1] = strtoul(substring, NULL, 10);
+        counter1++;
+        substring = strtok(NULL, ",");
+    }
+
+    unsigned long startRow = carguments[0];
+    unsigned long startColumn = carguments[1];
+    unsigned long numColumns = carguments[2];
+    unsigned long numRows = carguments[3];
+    unsigned long sizeToCopy = carguments[2] * carguments[3] * 3;
+
+    // extract P arguments
+    counter1 = 0;
+    unsigned long parguments[2];
+    substring = strtok(pname, ",");
+    while (substring != NULL){
+        parguments[counter1] = strtoul(substring, NULL, 10);
+        counter1++;
+        substring = strtok(NULL, ",");
+    }
+
+    unsigned long startRowPaste = parguments[0];
+    unsigned long startColumnPaste = parguments[1];
+
+    unsigned long counter2 = 0;
+    unsigned long copiedValues[sizeToCopy];
+    unsigned long startingXY = (startRow * width * 3) + (startColumn * 3);
+    unsigned long val;
+    unsigned long val2; 
+
+    for(unsigned long row = 0; row < numRows && ((startRow + row) < height); row++) {
+        for(unsigned long column = 0; column < numColumns && ((startColumn + column) < width); column++) {
+            unsigned long currentSpot = startingXY + (column * 3);
+           
+            if (currentSpot + 2 < width * height * 3 && ((startColumn + column) < width) && ((startRow + row) < height)) {
+                copiedValues[counter2++] = numbersArray[currentSpot];
+                copiedValues[counter2++] = numbersArray[currentSpot + 1];
+                copiedValues[counter2++] = numbersArray[currentSpot + 2];
+            }
+            if (row == 0) {
+                val = column;
+            }
+        }
+        startingXY = startingXY + (width * 3);
+        val2 = row;
+    }
+
+    counter2 = 0;
+    unsigned long column;
+    unsigned long startingXYPaste = (startRowPaste * width * 3) + (startColumnPaste * 3);
+
+    for(unsigned long row = 0; row <= val2 && ((startRowPaste + row) < height); row++) {
+        for(column = 0; column <= val && ((startColumnPaste + column) < width); column++) {
+            unsigned long currentSpot = startingXYPaste + (column * 3);
+
+            if (currentSpot + 2 < width * height * 3) {
+                numbersArray[currentSpot] = copiedValues[counter2];
+                numbersArray[currentSpot + 1] = copiedValues[counter2 + 1];
+                numbersArray[currentSpot + 2] = copiedValues[counter2 + 2];
+                counter2 += 3; 
+            }
+        }
+        while (column <= val) {
+            counter2 += 3;
+            column++;
+        }
+        startingXYPaste = startingXYPaste + (width * 3);
+    }
+}
 int main(int argc, char **argv) {
     extern char *optarg;
     extern int optind;
@@ -100,8 +453,7 @@ int main(int argc, char **argv) {
         fclose(fp);
     }
     
-    fp = fopen(oname, "w");
-    if (fp == NULL){
+    if ((fp = fopen(oname, "w")) == NULL){
         return OUTPUT_FILE_UNWRITABLE;
     }
     else{
@@ -120,9 +472,7 @@ int main(int argc, char **argv) {
         char *substring = strtok(cnamecopy, ",");
 
         while (substring != NULL){
-            if (strtoul(substring, NULL, 10) > 0){
-                counter++;
-            }
+            counter++;
             substring = strtok(NULL, ",");
         }
         if(counter != 4){
@@ -142,47 +492,56 @@ int main(int argc, char **argv) {
             counter++;
             substring = strtok(NULL, ",");
         }
-        printf("%d ", counter);
         if (counter != 2){
         return P_ARGUMENT_INVALID;
         }
     }
 
-    if (rname != NULL){
-        int counter = 0;
-        char *portion = strtok(rname, ",");
+    if (rname != NULL) {
+    int counter = 0;
 
-        while (portion != NULL){
-            counter++;
-            portion = strtok(NULL, ",");
+    char rnamecopy[strlen(rname) + 1];
+    strncpy(rnamecopy, rname, strlen(rname));
+    rnamecopy[strlen(rname)] = '\0';
+    char *portion = strtok(rnamecopy, ",");
+
+    while (portion != NULL) {
+        counter++;
+        portion = strtok(NULL, ",");
+    }
+
+    char substring[500];
+    if (counter >= 2) {
+        char *p = rname;
+        int length = 0;
+        while (*p != '.' && *p != '\0') {
+            p++;
         }
-
-        if (counter >= 2){
-            char* p = rname;
-            int length = 0;
-            while (*rname != '.' && *rname != '\0'){
-                p++;
-                rname++;
-            }
-            while(*p != '"' && *p != '\0'){
+        if (*p == '.') {
+            char *start = p; 
+            while (*p != '"' && *p != '\0') {
                 p++;
                 length++;
             }
-            char substring[length+1];
-            strncpy(substring, rname, length);
+            strncpy(substring, start, length);
             substring[length] = '\0';
-            if ((fp = fopen(substring, "r")) == NULL){
+            printf("%s", substring);
+            if ((fp = fopen(substring, "r")) == NULL) {
                 return R_ARGUMENT_INVALID;
             }
-        }
-        if (counter != 5){
-        return R_ARGUMENT_INVALID;
+        } else {
+            return R_ARGUMENT_INVALID;
         }
     }
+    if (counter != 5) {
+        return R_ARGUMENT_INVALID;
+    }
+    }
+
 
     char *p = iname;
     char filetype1[4];
-    long unsigned int i = 0;
+    unsigned long i = 0;
     while (i < strlen(iname)-3){
         p++;
         i++;
@@ -200,6 +559,75 @@ int main(int argc, char **argv) {
     strncpy(filetype2, p, 3);
     filetype2[3] = '\0';
 
+    // if (strcmp(filetype1, "ppm") == 0 && strcmp(filetype2, "ppm") == 0){
+    //         FILE *read = fopen(iname, "r");
+    //         FILE *write = fopen(oname, "w");
+    //         if ((cflag == 0 && pflag == 0) && rflag == 0){
+    //             char c;
+    //             while ((c = fgetc(read)) != EOF){
+    //             fputc(c, write);
+    //             }
+    //         }
+    //         else{
+                // char dimensions[100];
+                // dimensions[99] = '\0';
+
+                // fgets(dimensions, sizeof(dimensions), read);  // Reads PPM (line 1)
+                // fgets(dimensions, sizeof(dimensions), read);  // Reads dimensions (line 2)
+
+                // unsigned long width;
+                // unsigned long height;
+                // unsigned long testCounter = 0;
+                // char *testPortion = strtok(dimensions, " ");
+                // while (testPortion != NULL){
+                //     if (testCounter == 0){
+                //         width = strtoul(testPortion, NULL, 10);
+                //     }
+                //     if (testCounter == 1){
+                //         height = strtoul(testPortion, NULL, 10);
+                //     }
+                //     testCounter++;
+                //     testPortion = strtok(NULL, " ");
+                // }
+
+
+                // fgets(dimensions, sizeof(dimensions), read); // Reads in 255 (line 3)
+
+                // // char lines[width * height * 5 + 1]; // Temporary holder
+                // unsigned long numbersArray[width * height * 5 + 1]; // RGB values
+                // unsigned long counter = 0;
+
+                // while (fgets(lines, sizeof(lines), read) != NULL){ 
+                //     char *portion = strtok(lines, " ");
+                //     while (portion != NULL){
+                //         if (portion[0] != '\n'){
+                //             numbersArray[counter] = strtoul(portion, NULL, 10);
+                //             counter++;
+                //         }
+                //         portion = strtok(NULL, " ");
+                //     }
+                // }
+
+                // if (cflag == 1 && pflag == 1){
+                //     copyAndPastePixels(width, height, numbersArray, cname, pname);
+                // }
+
+                // if (rflag == 1){
+                //     rPrint(numbersArray, rname, width, height);
+                // }
+
+                // fprintf(write, "P3\n");
+                // fprintf(write, "%lu %lu\n", width, height);
+                // fprintf(write, "%d\n", 255);
+                // for(unsigned long t = 0; t < counter; t+= 3){
+                //     fprintf(write, "%lu %lu %lu\n", numbersArray[t], numbersArray[t + 1], numbersArray[t + 2]);
+                // }
+                // fprintf(write, "\n");
+            // }
+
+        //     fclose(write);
+        //     fclose(read);
+        // }
 
 
     if (strcmp(filetype1, filetype2) == 0){
@@ -725,9 +1153,8 @@ int main(int argc, char **argv) {
             }
 
             fgets(lines, sizeof(lines), read); // used to read the line with color value inputs (line 5) 
-
+            unsigned long numbersArray[width * height * 4 + 1];
             if (cflag == 1 && pflag == 1){
-                unsigned long numbersArray[width * height * 4 + 1];
                 unsigned long numCounter = 0;
                 portion = strtok(lines, " ");
                 while (portion != NULL){
@@ -872,4 +1299,4 @@ int main(int argc, char **argv) {
     }
     
     return 0;
-}
+    }
