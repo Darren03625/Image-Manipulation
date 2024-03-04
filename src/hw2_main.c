@@ -120,22 +120,22 @@ void rPrint(unsigned long numbersArray[], char *rname, unsigned long width, unsi
     // extracts font file path
     section = strtok(NULL, ", \"");
     char *fontFilePath = section;
-    printf("\n Font File Path: %s", fontFilePath);
+    // printf("\n Font File Path: %s", fontFilePath);
 
     // extracts font size
     section = strtok(NULL, ",");
     unsigned long fontSize = strtoul(section, NULL, 10);
-    printf("\n Font Size: %lu", fontSize);
+    // printf("\n Font Size: %lu", fontSize);
 
     // extracts starting row to be printed
     section = strtok(NULL, ",");
     unsigned long startRowTextPaste = strtoul(section, NULL, 10);
-    printf("\n Start Row Text Paste: %lu", startRowTextPaste);
+    // printf("\n Start Row Text Paste: %lu", startRowTextPaste);
 
     // extracts strating column to be printed
     section = strtok(NULL, ",");
     unsigned long startColumnTextPaste = strtoul(section, NULL, 10);
-    printf("\n Start Column Text Paste: %lu", startRowTextPaste);
+    // printf("\n Start Column Text Paste: %lu", startRowTextPaste);
 
     FILE *fontRead = fopen(fontFilePath, "r"); // CHANGE THIS TO FONTFILEPATH WHEN YOU ARE SUBMITTING **************************8
     
@@ -438,8 +438,6 @@ int main(int argc, char **argv) {
         }
     }
 
-
-
     if (iflag == 0 || oflag == 0){
         return MISSING_ARGUMENT;
     }
@@ -516,7 +514,7 @@ int main(int argc, char **argv) {
         counter++;
         portion = strtok(NULL, ",");
     }
-    // printf("Number of R Arguments: %d ", counter);
+    printf("Number of R Arguments: %d ", counter);
 
     char substring[500];
     if (counter >= 2) {
@@ -527,13 +525,15 @@ int main(int argc, char **argv) {
         }
         if (*p == '.') {
             char *start = p; 
-            while (*p != '"' && *p != '\0') {
+            while (*p != ',' && *p != '\0') {
                 p++;
                 length++;
             }
             strncpy(substring, start, length);
             substring[length] = '\0';
+            printf("FilePath: %s", substring);
             if ((fp = fopen(substring, "r")) == NULL) {
+                printf("here1");
                 return R_ARGUMENT_INVALID;
             }
         } else {
